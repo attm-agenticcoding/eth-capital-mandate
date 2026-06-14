@@ -9,8 +9,9 @@ export function AboutSection() {
           collateral — <b>not</b> transaction fees.
         </p>
         <p>
-          <b>Where the market sits.</b> Thesis-FALSE fair value ≈ <b>$1,200–2,500/coin</b> (≈ $1.5–3.0T mcap).
+          <b>Where the market sits.</b> Thesis-FALSE fair value ≈ <b>$1,200–2,500/coin</b> (≈ $0.15–0.30T mcap).
           ETH today sits mid-band → the market currently prices this thesis as <b>FALSE</b>. This dashboard exists
+          {/* mcap = per-coin band × circulating supply (~120.7M ETH) */}
           to detect, <i>early</i>, whether the capital-mandate branch is hardening.
         </p>
         <p>

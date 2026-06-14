@@ -13,7 +13,7 @@ export const STATED_PRIOR = {
   // Label everywhere as a STATED ANALYST PRIOR, not a model output.
   base: { branchPct: 32, p10k: 30, p20k: 12 },
   fairValueBandUsd: [1200, 2500], // thesis-FALSE fair value per coin
-  fairValueMcapUsdT: [1.5, 3.0], // thesis-FALSE fair value, market cap
+  fairValueMcapUsdT: [0.15, 0.3], // thesis-FALSE fair value, market cap (≈ $1,200–2,500/coin × ~120.7M ETH)
 };
 
 // CHI total -> probability band. Evaluated top-down.
