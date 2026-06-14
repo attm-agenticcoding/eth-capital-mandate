@@ -1,0 +1,39 @@
+{
+  "_note": "Human-curated inputs for the thesis-critical components that NO API can supply. Edit this file (GitHub web UI is fine), commit, and the next build/cron run picks it up. NEVER invent values — leave unset/false until a primary source confirms. See README.md for exactly what lights each component.",
+  "_updated": "2026-06-14",
+
+  "chi1_stress": {
+    "episode_through_50dd": false,
+    "share_delta_pp": null,
+    "no_delist_or_ltv_cut": null,
+    "note": "Set episode_through_50dd=true only after a ≥50% ETH drawdown completes. Record the ETH-system collateral-share change in pp (negative = share fell) and whether any top venue delisted ETH or cut max LTV >10pp.",
+    "source": ""
+  },
+
+  "chi2_demand_enforcement": { "lit": false, "note": "", "source": "" },
+
+  "chi3_mandatory_bond": {
+    "systems": [
+      { "name": "", "category": "preconf|sequencing|solver|agent-escrow|insurance", "eth_bound": 0, "mandatory": false, "live": false, "source": "" }
+    ],
+    "reverse_signal": false
+  },
+
+  "chi4_institutional": {
+    "venues": [
+      { "name": "", "type": "PB|CCP|margin", "asset": "spot|staked", "haircut_pct": null, "live": false, "source": "" }
+    ]
+  },
+
+  "chi5_haircut_trend": { "compressing": null, "note": "", "source": "" },
+
+  "chi6_term_share_pct": null,
+
+  "factory_protocol": {
+    "items": [
+      { "name": "blob-fee-floor|mev-burn|native-rollup-eth-bond", "eip": "", "status": "idea|draft|cfi|scheduled|live", "fork": "", "source": "" }
+    ]
+  },
+
+  "factory_codification_note": ""
+}
