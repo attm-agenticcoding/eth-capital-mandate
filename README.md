@@ -38,7 +38,7 @@ Each scores **0 / 0.5 / 1** (max 6). 🟢 = auto-fetched, ✍️ = you curate it
 
 | # | Component | Mode | Lights (= 1) when |
 |---|-----------|------|-------------------|
-| **CHI-1** | Stress survival | 🟢+✍️ | Through any **≥50% ETH drawdown**, ETH-system collateral share across Aave/Morpho/Sky falls **≤5pp** AND no top venue delists ETH or cuts max LTV >10pp. **Seeded at 0.5** (2022 passed eligibility, but stable/T-bill collateral wasn't at scale — the real test is the *next* ≥50% drawdown). Auto-tracks share + drawdown; you confirm the no-delist leg. |
+| **CHI-1** | Stress survival | 🟢+✍️ | Through any **≥50% ETH drawdown**, the ETH-system **net** collateral share across Aave/Morpho/Sky falls **≤5pp** AND no top venue delists ETH or cuts max LTV >10pp. **Seeded at 0.5** (2022 passed eligibility, but stable/T-bill collateral wasn't at scale — the real test is the *next* ≥50% drawdown). Auto-tracks the **net** ETH collateral share — Sky's USDC PSM, pure lenders and same-class loops (wstETH→ETH, sUSDe carries) are excluded — plus drawdown; you confirm the no-delist leg. |
 | **CHI-2** | Demand-side enforcement | ✍️ | An ETH-restricting venue demonstrably loses TVL share, OR ETH keeps the top LTV tier in venues that **also** list tokenized-treasury collateral. |
 | **CHI-3** | Mandatory slashable ETH bond | ✍️ | **≥3 LIVE** systems across **≥2 categories** (preconf / based-sequencing / solver-intent / agent-escrow / cross-chain insurance) **require** an ETH-denominated slashable bond, **≥5M ETH** bound aggregate. **Reverse signal (−0.5)**: a top-2 standard in any category adopts multi-asset/stablecoin bonding instead — and if CHI ≤ 1.5 this flags the Schelling thesis **RETIRED**. |
 | **CHI-4** | Institutional tabularization | ✍️ | **≥2 regulated venues** (prime broker, CCP/clearinghouse, or regulated margin program) list ETH on a collateral eligibility schedule at **haircut ≤40%**, **LIVE** (not announced). |
@@ -128,7 +128,7 @@ fresh snapshot and deployed. To enable: push to GitHub, ensure **Settings → Pa
 
 ## Data sources (all keyless)
 
-CoinGecko (price / vol / correlation) · DefiLlama (collateral composition, stablecoins, chains, RWA) ·
+CoinGecko (price / vol / correlation) · DefiLlama (Aave/Sky collateral, stablecoins, chains, RWA) · Morpho Blue API (per-market net collateral) ·
 ultrasound.money (supply, staking, issuance/burn) · growthepie.xyz (L1+blob fees, L2→L1 economics) · L2BEAT (L2 TVL).
 
 ---

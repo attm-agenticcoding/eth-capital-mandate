@@ -227,49 +227,92 @@ async function firstVenue(name, slugs) {
   return null;
 }
 
-async function getCollateral() {
-  const specs = [
-    ['Aave', ['aave-v3']],
-    ['Morpho', ['morpho-blue', 'morpho']],
-    ['Sky', ['sky', 'makerdao']],
-  ];
-  const venues = [];
-  for (const [name, slugs] of specs) {
-    const v = await firstVenue(name, slugs);
-    if (v) venues.push(v);
+// Morpho Blue exposes isolated (collateral, loan) markets, so we can measure TRUE
+// collateral and net same-asset-class loops/carries (rule B): for each market,
+// net = max(0, collateralUsd − sameClassBorrowUsd). This drops sUSDe→stable carries
+// to their equity slice and nets wstETH→ETH loops, with no per-account data needed.
+async function morphoNetCollateral() {
+  const gql = async (query) => {
+    const res = await fetch('https://blue-api.morpho.org/graphql', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'user-agent': 'eth-capital-mandate/1.0 (+github actions)' },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) throw new Error(`Morpho HTTP ${res.status}`);
+    const j = await res.json();
+    if (j.errors) throw new Error('Morpho GQL ' + JSON.stringify(j.errors).slice(0, 120));
+    return j.data;
+  };
+  let skip = 0, all = [];
+  for (;;) {
+    const d = await gql(`{ markets(first: 200, skip: ${skip}, where: { chainId_in: [1] }, orderBy: SupplyAssetsUsd, orderDirection: Desc) { items { listed loanAsset { symbol } collateralAsset { symbol } state { collateralAssetsUsd borrowAssetsUsd } } } }`);
+    const items = d?.markets?.items || [];
+    all = all.concat(items);
+    if (items.length < 200) break;
+    skip += 200;
   }
-  if (!venues.length) throw new Error('collateral: no venue token data');
+  const b = { eth: 0, stable: 0, btc: 0, other: 0 };
+  for (const m of all) {
+    if (!m.listed || !m.collateralAsset || !(m.state?.collateralAssetsUsd > 0)) continue;
+    const cc = classifyToken(m.collateralAsset.symbol);
+    const lc = classifyToken(m.loanAsset?.symbol);
+    const coll = m.state.collateralAssetsUsd || 0;
+    const borrow = m.state.borrowAssetsUsd || 0;
+    b[cc] += Math.max(0, coll - (cc === lc ? borrow : 0)); // rule B: net same-class
+  }
+  return b;
+}
 
-  // current combined buckets
+// TRUE net-collateral composition across Aave v3 + Morpho Blue + Sky. This replaces a
+// supply-side TVL share that over-counted (a) pure lenders, (b) Sky's USDC PSM /
+// savings (peg reserves, NOT collateral), and (c) wstETH→ETH and sUSDe-style loops.
+// Aave: DefiLlama 'Ethereum' tokensInUsd is already NET (supply − borrow) per token,
+// so summing by class nets same-class loops (e.g. the ~$2.9B WETH borrowed against LST
+// collateral) automatically. Sky: vault collateral only (stable bucket = PSM/savings,
+// dropped). Morpho: per-market net (rule B). See README "CHI-1".
+async function getCollateral() {
+  const aave = await firstVenue('Aave', ['aave-v3']);
+  const sky = await firstVenue('Sky', ['makerdao', 'sky']);
+  if (!aave && !sky) throw new Error('collateral: no venue token data');
+
+  let morpho = null; // best-effort: degrade to Aave+Sky if Morpho's API is unreachable
+  try { morpho = await withRetry(() => morphoNetCollateral(), 2, 1500); }
+  catch (e) { console.warn(`! morpho collateral failed: ${e.message}`); }
+
+  const skyColl = (b) => ({ ...b, stable: 0 }); // Sky: drop PSM/savings, keep vault collateral
+
+  // current snapshot
   const combined = { eth: 0, stable: 0, btc: 0, other: 0 };
   const perVenue = [];
-  for (const v of venues) {
-    const latest = v.toks[v.toks.length - 1];
-    const b = bucketize(latest.tokens);
+  const pushVenue = (name, slug, basis, b) => {
     const tot = bTotal(b) || 1;
     for (const k of Object.keys(combined)) combined[k] += b[k];
-    perVenue.push({ name: v.name, slug: v.slug, totalUsd: Math.round(tot), ethSharePct: r2((b.eth / tot) * 100, 1), stableSharePct: r2((b.stable / tot) * 100, 1) });
-  }
+    perVenue.push({ name, slug, basis, totalUsd: Math.round(bTotal(b)), ethSharePct: r2((b.eth / tot) * 100, 1) });
+  };
+  if (aave) pushVenue('Aave', aave.slug, 'DL net', bucketize(aave.toks[aave.toks.length - 1].tokens));
+  if (morpho) pushVenue('Morpho', 'morpho-blue', 'API net (rule B)', morpho);
+  if (sky) pushVenue('Sky', sky.slug, 'vault collateral (PSM excluded)', skyColl(bucketize(sky.toks[sky.toks.length - 1].tokens)));
+
   const ctot = bTotal(combined) || 1;
   const combinedEthSharePct = r2((combined.eth / ctot) * 100, 1);
   const combinedStableSharePct = r2((combined.stable / ctot) * 100, 1);
 
-  // monthly drift series (last 18 months): ETH share vs stable share across venues
+  // 18-month drift. Aave (net) + Sky (PSM-excluded) have DL monthly history; Morpho has
+  // no per-market history, so it's held flat at its current net value — this anchors the
+  // drift's level to the headline without inventing a Morpho trend.
+  const morphoConst = morpho || { eth: 0, stable: 0, btc: 0, other: 0 };
   const drift = [];
   for (let k = 17; k >= 0; k--) {
     const d = new Date(NOW.getFullYear(), NOW.getMonth() - k + 1, 0); // month-end
     const tsSec = Math.floor(d.getTime() / 1000);
-    const agg = { eth: 0, stable: 0, btc: 0, other: 0 };
+    const agg = { ...morphoConst };
     let any = false;
-    for (const v of venues) {
-      const b = bucketsAt(v.toks, tsSec);
-      if (b) { any = true; for (const key of Object.keys(agg)) agg[key] += b[key]; }
-    }
+    if (aave) { const b = bucketsAt(aave.toks, tsSec); if (b) { any = true; for (const key of Object.keys(agg)) agg[key] += b[key]; } }
+    if (sky) { const b = bucketsAt(sky.toks, tsSec); if (b) { any = true; const s = skyColl(b); for (const key of Object.keys(agg)) agg[key] += s[key]; } }
     if (!any) continue;
     const tot = bTotal(agg) || 1;
     drift.push({ t: d.getTime(), ethPct: r2((agg.eth / tot) * 100, 1), stablePct: r2((agg.stable / tot) * 100, 1), btcPct: r2((agg.btc / tot) * 100, 1) });
   }
-
   const combinedEthShareDeltaPp = drift.length >= 2 ? r2(drift[drift.length - 1].ethPct - drift[0].ethPct, 1) : null;
 
   return {
@@ -278,7 +321,9 @@ async function getCollateral() {
     combinedEthShareDeltaPp,
     driftWindowMonths: drift.length,
     combinedTotalUsd: Math.round(ctot),
-    venuesUsed: venues.map((v) => v.name),
+    venuesUsed: perVenue.map((v) => v.name),
+    morphoOk: !!morpho,
+    method: 'NET collateral (rule B): Aave DL-net + Morpho per-market net + Sky vault-only (USDC PSM/savings excluded). Morpho held flat across the 18m drift (no per-market history).',
     perVenue,
     drift,
   };
@@ -500,7 +545,7 @@ async function run() {
 
   const [market, collateral, stablecoins, chains, rwa, supply, fees, l2] = await Promise.all([
     settle('coingecko', 'CoinGecko', 'https://www.coingecko.com/en/coins/ethereum', getMarket, '_market'),
-    settle('defillama_collateral', 'DefiLlama (Aave/Morpho/Sky)', 'https://defillama.com/protocol/aave-v3', getCollateral, 'collateral'),
+    settle('defillama_collateral', 'DefiLlama + Morpho API (Aave/Morpho/Sky)', 'https://defillama.com/protocol/aave-v3', getCollateral, 'collateral'),
     settle('defillama_stables', 'DefiLlama Stablecoins', 'https://defillama.com/stablecoins', getStablecoins, 'stablecoins'),
     settle('defillama_chains', 'DefiLlama Chains', 'https://defillama.com/chains', getChains, 'chains'),
     settle('defillama_rwa', 'DefiLlama RWA', 'https://defillama.com/protocols/RWA', getRwa, 'rwa'),

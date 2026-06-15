@@ -35,8 +35,8 @@ export const CHI_COMPONENTS = [
   {
     id: 'CHI-1', key: 'chi1', name: 'Stress survival', mode: 'auto+manual',
     threshold:
-      'Through any ≥50% ETH drawdown, ETH-system collateral share across Aave/Morpho/Sky falls ≤5pp AND no top venue delists ETH or cuts max LTV >10pp.',
-    source: { label: 'DefiLlama + CoinGecko', url: 'https://defillama.com/protocol/aave-v3' },
+      'Through any ≥50% ETH drawdown, the ETH-system NET collateral share across Aave/Morpho/Sky (Sky USDC PSM, pure lenders and same-class loops excluded) falls ≤5pp AND no top venue delists ETH or cuts max LTV >10pp.',
+    source: { label: 'DefiLlama + Morpho API + CoinGecko', url: 'https://defillama.com/protocol/aave-v3' },
   },
   {
     id: 'CHI-2', key: 'chi2', name: 'Demand-side enforcement', mode: 'manual',
@@ -75,7 +75,7 @@ const num = (x) => (typeof x === 'number' && isFinite(x) ? x : null);
 
 // --- per-component scorers. Each returns { score, valueText, detail, extra? } ---
 
-// CHI-1: AUTO tracks collateral share + drawdown; manual confirms no delist/LTV cut.
+// CHI-1: AUTO tracks the NET ETH collateral share + drawdown; manual confirms no delist/LTV cut.
 // Seed = 0.5 (2022 passed eligibility, but stablecoin/T-bill collateral wasn't yet at
 // scale — so the real test is the *next* ≥50% drawdown).
 function chi1(auto, manual) {
@@ -100,10 +100,10 @@ function chi1(auto, manual) {
   const driftTxt = delta !== null ? ` · share ${delta >= 0 ? '+' : ''}${delta}pp over tracked window` : '';
   const valueText =
     share !== null
-      ? `ETH-system collateral ${share.toFixed(1)}%${driftTxt} · drawdown from peak ${dd !== null ? '−' + dd.toFixed(0) + '%' : 'n/a'}`
+      ? `ETH-system NET collateral ${share.toFixed(1)}%${driftTxt} · drawdown from peak ${dd !== null ? '−' + dd.toFixed(0) + '%' : 'n/a'}`
       : 'Awaiting collateral data';
   if (score === 0.5 && delta !== null && delta <= -5 && dd !== null && dd >= 50) {
-    detail += ` ⚠ Caution: amid the current −${dd.toFixed(0)}% drawdown, ETH-system collateral share has fallen ${Math.abs(delta)}pp (>5pp) as stablecoin/T-bill collateral gains — a soft fail of the light condition, pending the manual delist/LTV check.`;
+    detail += ` ⚠ Caution: amid the current −${dd.toFixed(0)}% drawdown, the ETH-system NET collateral share has fallen ${Math.abs(delta)}pp (>5pp) — a soft fail of the light condition, pending the manual delist/LTV check.`;
   }
   return { score, valueText, detail };
 }
