@@ -27,8 +27,8 @@ It scores a **Convention Hardening Index (CHI)** (6 components, 0–6), runs a *
 ### Guardrails
 - **Never fabricate.** API failure → the previous good value is carried forward and stamped `stale`. A manual field
   left unset renders **"Awaiting"**, never a fake number.
-- The thesis-critical components (**CHI-3, CHI-4**, protocol factory) are **MANUAL by necessity** — no API exists.
-  The UI badges these clearly; they do **not** move on their own.
+- Some thesis-critical components (**CHI-4**, protocol factory) remain **MANUAL by necessity** — no API exists.
+  The UI badges these clearly; they do **not** move on their own. (**CHI-3 is now AUTO** — ETH restaked via DefiLlama.)
 
 ---
 
@@ -40,7 +40,7 @@ Each scores **0 / 0.5 / 1** (max 6). 🟢 = auto-fetched, ✍️ = you curate it
 |---|-----------|------|-------------------|
 | **CHI-1** | Stress survival | 🟢+✍️ | Through any **≥50% ETH drawdown**, the ETH-system **net** collateral share across Aave/Morpho/Sky falls **≤5pp** AND no top venue delists ETH or cuts max LTV >10pp. **Seeded at 0.5** (2022 passed eligibility, but stable/T-bill collateral wasn't at scale — the real test is the *next* ≥50% drawdown). Auto-tracks the **net** ETH collateral share — Sky's USDC PSM, pure lenders and same-class loops (wstETH→ETH, sUSDe carries) are excluded — plus drawdown; you confirm the no-delist leg. |
 | **CHI-2** | Demand-side enforcement | ✍️ | An ETH-restricting venue demonstrably loses TVL share, OR ETH keeps the top LTV tier in venues that **also** list tokenized-treasury collateral. |
-| **CHI-3** | Mandatory slashable ETH bond | ✍️ | **≥3 LIVE** systems across **≥2 categories** (preconf / based-sequencing / solver-intent / agent-escrow / cross-chain insurance) **require** an ETH-denominated slashable bond, **≥5M ETH** bound aggregate. **Reverse signal (−0.5)**: a top-2 standard in any category adopts multi-asset/stablecoin bonding instead — and if CHI ≤ 1.5 this flags the Schelling thesis **RETIRED**. |
+| **CHI-3** | Slashable ETH bond demand | 🟢 | **ETH restaked** across EigenLayer / Symbiotic / Karak, **ETH-denominated** (price-stripped). Lights at **≥5M ETH** bonded; **≥1M** = partial. **Reverse (Schelling-retired):** generalized ETH bonding **collapses <1M ETH** → if CHI ≤ 1.5, thesis flagged **RETIRED**. *Headline TVL over-reads real demand (points-farming, LST double-count, non-live-slashing AVSs) — treat as upper bound.* |
 | **CHI-4** | Institutional tabularization | ✍️ | **≥2 regulated venues** (prime broker, CCP/clearinghouse, or regulated margin program) list ETH on a collateral eligibility schedule at **haircut ≤40%**, **LIVE** (not announced). |
 | **CHI-5** | Volatility / haircut regime | 🟢+✍️ | ETH trailing-365d realized vol **<50% for ≥2 consecutive quarters** (auto) **AND** regulated-venue haircut quotes trending down (manual). |
 | **CHI-6** | Duration | ✍️ | Fixed-term (**≥90-day**) borrowing against ETH collateral **≥10%** of total ETH-collateral debt (Pendle / Morpho fixed-term / Term / Notional). |
@@ -74,14 +74,6 @@ All human-curated inputs live in **`data/manual.json`**. Edit it directly in the
   },
 
   "chi2_demand_enforcement": { "lit": false, "note": "", "source": "" },
-
-  "chi3_mandatory_bond": {                    // add one object per LIVE system
-    "systems": [
-      { "name": "", "category": "preconf|sequencing|solver|agent-escrow|insurance",
-        "eth_bound": 0, "mandatory": false, "live": false, "source": "" }
-    ],
-    "reverse_signal": false                   // true if a top-2 standard went multi-asset/stablecoin bonding
-  },
 
   "chi4_institutional": {                     // add one object per regulated venue
     "venues": [
@@ -128,7 +120,7 @@ fresh snapshot and deployed. To enable: push to GitHub, ensure **Settings → Pa
 
 ## Data sources (all keyless)
 
-CoinGecko (price / vol / correlation) · DefiLlama (Aave/Sky collateral, stablecoins, chains, RWA) · Morpho Blue API (per-market net collateral) ·
+CoinGecko (price / vol / correlation) · DefiLlama (Aave/Sky collateral, stablecoins, chains, RWA, restaking) · Morpho Blue API (per-market net collateral) ·
 ultrasound.money (supply, staking, issuance/burn) · growthepie.xyz (L1+blob fees, L2→L1 economics) · L2BEAT (L2 TVL).
 
 ---

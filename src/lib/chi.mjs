@@ -45,10 +45,10 @@ export const CHI_COMPONENTS = [
     source: { label: 'manual', url: '' },
   },
   {
-    id: 'CHI-3', key: 'chi3', name: 'Mandatory slashable ETH bond', mode: 'manual',
+    id: 'CHI-3', key: 'chi3', name: 'Slashable ETH bond demand', mode: 'auto',
     threshold:
-      '≥3 LIVE systems across ≥2 categories (preconf / based-sequencing / solver-intent / agent-escrow / cross-chain insurance) REQUIRE an ETH-denominated slashable bond, ≥5M ETH bound aggregate.',
-    source: { label: 'manual', url: '' },
+      'ETH restaked across EigenLayer / Symbiotic / Karak, ETH-denominated (price-stripped). Lights at ≥5M ETH bonded; ≥1M = partial; reverse (Schelling-retired) if it collapses <1M. Headline TVL over-reads — points-farming, LST double-count, non-live-slashing AVSs.',
+    source: { label: 'DefiLlama Restaking', url: 'https://defillama.com/protocols/Restaking' },
   },
   {
     id: 'CHI-4', key: 'chi4', name: 'Institutional tabularization', mode: 'manual',
@@ -122,27 +122,28 @@ function chi2(_auto, manual) {
   };
 }
 
-// CHI-3: MANUAL. Reverse signal (−0.5) triggers the Schelling-retired check.
-function chi3(_auto, manual) {
-  const m = manual?.chi3_mandatory_bond || {};
-  const systems = Array.isArray(m.systems) ? m.systems.filter((s) => s && s.mandatory && s.live) : [];
-  const cats = new Set(systems.map((s) => s.category).filter(Boolean));
-  const ethBound = systems.reduce((a, s) => a + (Number(s.eth_bound) || 0), 0);
+// CHI-3: AUTO. ETH used as a slashable security bond — proxied by ETH restaked
+// (EigenLayer + Symbiotic + Karak), ETH-denominated to strip price. Caveat: headline
+// restaking TVL includes points-farming, LST double-counting and non-live-slashing
+// AVSs, so it OVER-reads genuine bond demand — treat as an upper bound. The reverse
+// signal (Schelling-retired proxy) fires if generalized ETH bonding collapses <1M ETH.
+function chi3(auto, _manual) {
+  const eth = num(auto?.restaking?.restakedEth);
+  const ratio = num(auto?.restaking?.restakedToStakedPct);
+  if (eth === null)
+    return { score: 0, valueText: 'Awaiting restaking data', detail: 'ETH restaked across EigenLayer / Symbiotic / Karak (ETH-denominated). Lights at ≥5M ETH bonded; ≥1M = partial.' };
   let score = 0;
-  if (systems.length >= 3 && cats.size >= 2 && ethBound >= 5_000_000) score = 1;
-  else if (systems.length >= 1) score = 0.5;
-  const reverse = m.reverse_signal === true;
-  if (reverse) score = Math.max(0, score - 0.5);
-  const valueText = systems.length
-    ? `${systems.length} live mandatory · ${cats.size} categor${cats.size === 1 ? 'y' : 'ies'} · ${(ethBound / 1e6).toFixed(2)}M ETH bound`
-    : 'Awaiting — 0 live mandatory ETH-bond systems';
+  if (eth >= 5_000_000) score = 1;
+  else if (eth >= 1_000_000) score = 0.5;
+  const reverse = eth < 1_000_000;
+  const m = (eth / 1e6).toFixed(2);
   return {
     score,
     reverse,
-    valueText,
+    valueText: `${m}M ETH restaked${ratio !== null ? ` · ${ratio}% of staked ETH` : ''}`,
     detail: reverse
-      ? 'REVERSE SIGNAL active (−0.5): a top-2 standard in some category adopted multi-asset / stablecoin bonding. If CHI ≤ 1.5 the Schelling thesis is flagged RETIRED.'
-      : 'Lights at ≥3 live systems across ≥2 categories requiring ETH-denominated slashable bonds, ≥5M ETH bound aggregate.',
+      ? 'REVERSE SIGNAL: ETH restaked has collapsed below 1M — generalized slashable-bond demand is failing. If CHI ≤ 1.5 the Schelling thesis is flagged RETIRED.'
+      : `${m}M ETH restaked (EigenLayer+Symbiotic+Karak, ETH-denominated). Lights at ≥5M; ≥1M = partial. NB: headline TVL over-reads real demand (points-farming, LST double-count, non-live-slashing AVSs).`,
   };
 }
 

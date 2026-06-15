@@ -329,6 +329,24 @@ async function getCollateral() {
   };
 }
 
+// CHI-3 source: ETH used as a slashable security bond, proxied by ETH restaked across
+// the major restaking layers. DefiLlama /tvl/{slug} returns USD; the assembly converts
+// it to an ETH-equivalent (price-stripped) + a restaked/staked ratio. Best-effort per
+// protocol so one dead restaker doesn't sink the metric.
+async function getRestaking() {
+  const slugs = ['eigenlayer', 'symbiotic', 'karak'];
+  const byProtocol = {};
+  let totalUsd = 0;
+  for (const s of slugs) {
+    try {
+      const usd = Number(await fetchJson(`https://api.llama.fi/tvl/${s}`));
+      if (isFinite(usd) && usd > 0) { byProtocol[s] = Math.round(usd); totalUsd += usd; }
+    } catch (e) { console.warn(`! restaking ${s}: ${e.message}`); }
+  }
+  if (totalUsd <= 0) throw new Error('restaking: no TVL from any source');
+  return { totalUsd: Math.round(totalUsd), byProtocol };
+}
+
 async function getStablecoins() {
   const arr = await fetchJson('https://stablecoins.llama.fi/stablecoinchains', { timeout: 30000 });
   const rows = arr
@@ -543,7 +561,7 @@ async function run() {
     }
   };
 
-  const [market, collateral, stablecoins, chains, rwa, supply, fees, l2] = await Promise.all([
+  const [market, collateral, stablecoins, chains, rwa, supply, fees, l2, restaking] = await Promise.all([
     settle('coingecko', 'CoinGecko', 'https://www.coingecko.com/en/coins/ethereum', getMarket, '_market'),
     settle('defillama_collateral', 'DefiLlama + Morpho API (Aave/Morpho/Sky)', 'https://defillama.com/protocol/aave-v3', getCollateral, 'collateral'),
     settle('defillama_stables', 'DefiLlama Stablecoins', 'https://defillama.com/stablecoins', getStablecoins, 'stablecoins'),
@@ -552,7 +570,17 @@ async function run() {
     settle('ultrasound', 'ultrasound.money', 'https://ultrasound.money', getSupply, 'supply'),
     settle('growthepie', 'growthepie.xyz', 'https://www.growthepie.xyz', getFees, 'fees'),
     settle('l2beat', 'L2BEAT', 'https://l2beat.com', getL2, 'l2'),
+    settle('defillama_restaking', 'DefiLlama Restaking', 'https://defillama.com/protocols/Restaking', getRestaking, 'restaking'),
   ]);
+
+  // CHI-3: ETH-denominated restaked + restaked/staked ratio (strips the price effect —
+  // restaking collateral is predominantly ETH/LSTs, so USD ÷ ETH price ≈ ETH bonded).
+  const _ethPx = (market.eth || {}).price;
+  const _stakedEth = (supply || {}).stakedEth;
+  if (restaking && restaking.totalUsd > 0 && _ethPx > 0) {
+    restaking.restakedEth = Math.round(restaking.totalUsd / _ethPx);
+    restaking.restakedToStakedPct = _stakedEth > 0 ? r2((restaking.restakedEth / _stakedEth) * 100, 1) : null;
+  }
 
   const auto = {
     eth: market.eth || carry('_market').eth,
@@ -568,6 +596,7 @@ async function run() {
     supply,
     fees,
     l2,
+    restaking,
   };
 
   const snapshot = { auto, manual };

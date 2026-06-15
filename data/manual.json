@@ -12,13 +12,6 @@
 
   "chi2_demand_enforcement": { "lit": false, "note": "", "source": "" },
 
-  "chi3_mandatory_bond": {
-    "systems": [
-      { "name": "", "category": "preconf|sequencing|solver|agent-escrow|insurance", "eth_bound": 0, "mandatory": false, "live": false, "source": "" }
-    ],
-    "reverse_signal": false
-  },
-
   "chi4_institutional": {
     "venues": [
       { "name": "", "type": "PB|CCP|margin", "asset": "spot|staked", "haircut_pct": null, "live": false, "source": "" }
