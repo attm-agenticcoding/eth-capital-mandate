@@ -1,6 +1,7 @@
 import { AboutSection } from './components/AboutSection.jsx';
 import { VerdictBanner } from './components/VerdictBanner.jsx';
 import { ChiGrid } from './components/ChiGrid.jsx';
+import { KillPanel } from './components/KillPanel.jsx';
 import { FactoryWatch } from './components/FactoryWatch.jsx';
 import { BearPanel } from './components/BearPanel.jsx';
 import { ContextPanel } from './components/ContextPanel.jsx';
@@ -29,6 +30,7 @@ export default function App() {
       <AboutSection />
       <VerdictBanner />
       <ChiGrid />
+      <KillPanel />
       <FactoryWatch />
       <BearPanel />
       <ContextPanel />

@@ -1,7 +1,7 @@
 import { auto } from '../lib/data.js';
 import { PanelHead, Stat } from './ui.jsx';
 import { LineChart, StackBar } from './charts.jsx';
-import { fmtUsd, fmtSigned, fmtEth, fmtNum } from '../lib/format.js';
+import { fmtUsd, fmtSigned, fmtEth, fmtNum, fmtSignedPct } from '../lib/format.js';
 
 function barW(v, sup) {
   const max = Math.max(sup.issuance30dEth || 0, sup.burn30dEth || 0, 1);
@@ -18,6 +18,11 @@ export function BearPanel() {
       : 'Loosening — watch for sustained < 0.70';
   const fees = auto.fees || {};
   const sup = auto.supply || {};
+  // KC-5: annualized NET issuance as % of supply, against the 2–3%/yr kill line. Mild
+  // inflation is NEUTRAL (it pays for the slashable security bond) — only sustained
+  // >2–3%/yr or a governance-raised curve disconfirms the monetary-policy leg.
+  const netPctYr = sup.net30dEth != null && sup.totalSupplyEth > 0
+    ? (sup.net30dEth / 30) * 365 / sup.totalSupplyEth * 100 : null;
   const drift = auto.collateral?.drift || [];
   const d = drift.at(-1);
 
@@ -79,13 +84,13 @@ export function BearPanel() {
           <div className="bear-h">ETH staked & net issuance</div>
           <div className="stat-row">
             <Stat label="staked" value={sup.stakingPct != null ? `${sup.stakingPct}%` : '—'} sub={fmtEth(sup.stakedEth)} />
-            <Stat label="net supply 30d" value={`${fmtSigned(sup.net30dEth)} ETH`} sub={sup.deflationary ? 'deflationary' : 'inflationary'} tone={sup.deflationary ? 'good' : 'bad'} />
+            <Stat label="net issuance / yr" value={netPctYr != null ? `${fmtSignedPct(netPctYr, 2)}/yr` : '—'} sub={`${fmtSigned(sup.net30dEth)} ETH/30d`} tone={netPctYr != null && netPctYr > 2 ? 'bad' : undefined} />
           </div>
           <div className="issuance-bars">
             <div className="ib-row"><span className="ib-l">issuance 30d</span><span className="ib-bar iss" style={{ width: `${barW(sup.issuance30dEth, sup)}%` }} /><span className="ib-v">{fmtNum(sup.issuance30dEth)}</span></div>
             <div className="ib-row"><span className="ib-l">burn 30d</span><span className="ib-bar burn" style={{ width: `${barW(sup.burn30dEth, sup)}%` }} /><span className="ib-v">{fmtNum(sup.burn30dEth)}</span></div>
           </div>
-          <p className="bear-note">Since Merge: {fmtSigned(sup.sinceMergeEth)} ETH — {sup.sinceMergeEth > 0 ? 'supply grew, NOT ultrasound' : 'deflationary'}. Burn collapsed post-Dencun.</p>
+          <p className="bear-note">Net issuance ≈ {netPctYr != null ? `${netPctYr.toFixed(2)}%/yr` : '—'} — {netPctYr != null && netPctYr > 2 ? 'above' : 'well under'} the 2–3%/yr kill line (KC-5). Mild inflation is <b>not</b> a kill: it pays for the slashable security bond. Only sustained &gt;2–3%/yr or a governance-raised curve disconfirms. Burn collapsed post-Dencun.</p>
         </div>
 
       </div>

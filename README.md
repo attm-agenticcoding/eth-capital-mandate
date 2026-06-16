@@ -4,8 +4,9 @@ A public, auto-updating dashboard that tracks **one** thesis: that ETH's only du
 **capital stock of open on-chain finance** — native, non-freezable, slashable, yield-bearing collateral — **not**
 transaction fees.
 
-It scores a **Convention Hardening Index (CHI)** (3 **auto-scored** components, 0–3), runs a **factory watch** and a
-**bear-confirmation panel**, and maps the live CHI to pre-set probability bands.
+It scores a **Convention Hardening Index (CHI)** (3 **auto-scored** components, 0–3), scores the **7 thesis kill
+criteria** as a structural-falsification scorecard (**≥3 sustained hits → consider exit**), runs a **factory watch**
+and a **bear-confirmation panel**, and maps the live CHI to pre-set probability bands.
 
 > Probabilities are a **stated analyst prior, not a model output**. Not investment advice.
 
@@ -60,6 +61,38 @@ Half credit (**0.5**) is awarded for meaningful-but-incomplete progress (e.g. CH
 
 ---
 
+## Kill criteria — structural falsification (the exit rule)
+
+Alongside the confirm-side CHI, the dashboard scores the **7 original thesis kill criteria** as a standalone scorecard
+(`src/lib/kill.mjs` → the **Kill criteria** panel). These are **structural falsifiers over a 3–5-year window, not price
+stops**. The stated decision rule: **≥3 sustained hits → seriously consider exit.**
+
+Two kinds, which decide what counts as a *hit*:
+- **Level** (KC-2/3/5/6) — a threshold breach is itself a structural regression, so it can hit immediately. The
+  persistence/flow legs (KC-3 RWA flow, KC-5 sustained issuance, KC-6 growth race) **accrue from the longitudinal log**
+  (null → "accruing" until enough history exists), exactly like CHI-5's haircut leg.
+- **Deadline** (KC-1/4/7) — the criterion is "within N years" (KC-1 5y, KC-4 3y, KC-7 2y). A condition that is
+  *currently* true is **expected this early** and shows **on watch**, not a hit; it becomes a hit only once the horizon
+  (anchored at `thesis_clock_start` in `manual.json`) elapses with the condition still true. This stops the scorecard
+  over-firing at thesis year ~0, when by construction the market hasn't priced the thesis.
+
+| # | Kill criterion | Kind | Hits when | Source |
+|---|----------------|------|-----------|--------|
+| **KC-1** | Cash flow + monetary premium 双双落空 | deadline 5y | L1 take-rate ≈0 (<0.5%/yr) **and** ETH/BTC 90d corr >0.85, still true at the 5y horizon | growthepie + CoinGecko |
+| **KC-2** | 支付层流失 | level | ETH-aligned (mainnet + ETH-settled rollups) stablecoin share **<35%** (from ~50%) | DefiLlama |
+| **KC-3** | 机构结算层旁落 | level | ETH-system RWA share **<50%** (majority defect); new-issuance flow read accrues | DefiLlama |
+| **KC-4** | L2 价值回流停滞 | deadline 3y | no top L2 at **Stage 2 + based sequencing** by the 3y horizon (manual leg; L2→L1 reflow as econ context) | L2BEAT + manual |
+| **KC-5** | 货币政策失信 | level | NET issuance **>2–3%/yr sustained**, or governance raises the curve (manual). **Mild inflation does NOT count** — it pays for the slashable bond | ultrasound.money |
+| **KC-6** | 被 Solana 全面超车 | level | Solana **overtakes** ETH on all-chain TVL share; growth race accrues | DefiLlama |
+| **KC-7** | 技术护城河落空 | deadline 2y | no material AI-assisted formal-verification progress by the 2y horizon (manual) | manual watch |
+
+Auto criteria (KC-1/2/3/6 and KC-5's level) recompute live from the snapshot; **KC-4, KC-7 and KC-5's governance leg
+are user-fed legs in `manual.json → kill_criteria`**. `thesis_clock_start` sets the deadline horizons. KC-5's framing
+is deliberately tuned to the criterion: **mild inflation is neutral** (it funds the security bond), so the bear panel's
+issuance read shows net issuance as **%/yr against the 2–3% line**, not a binary "ultrasound / not".
+
+---
+
 ## Editing the manual data
 
 The CHI is **fully auto-scored**, so most inputs need no curation. The only human-curated inputs left live in
@@ -90,7 +123,14 @@ up. **Leave anything you can't source as unset/false.**
         "status": "idea|draft|cfi|scheduled|live", "fork": "", "source": "" }
     ]
   },
-  "factory_codification_note": ""
+  "factory_codification_note": "",
+
+  "kill_criteria": {                            // manual legs for the kill scorecard (no keyless feed)
+    "thesis_clock_start": "2025-01-01",         // anchors the DEADLINE horizons (KC-1 5y, KC-4 3y, KC-7 2y)
+    "kc4_l2_reflow":         { "top_l2_stage2_and_based": null, "source": "" },  // true once a top L2 hits Stage 2 + based seq
+    "kc5_monetary":          { "issuance_curve_raised": false,  "source": "" },  // true if governance repeatedly raises issuance
+    "kc7_formal_verification": { "material_progress": null,     "source": "" }   // true on material formal-verification progress
+  }
 }
 ```
 

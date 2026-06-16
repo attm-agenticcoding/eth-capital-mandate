@@ -20,6 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { computeCHI } from '../src/lib/chi.mjs';
+import { ETH_ALIGNED_CHAINS } from '../src/lib/kill.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -362,8 +363,19 @@ async function getStablecoins() {
     .filter((r) => r.usd > 0);
   const total = rows.reduce((a, r) => a + r.usd, 0);
   const eth = rows.find((r) => r.name === 'Ethereum');
+  // KC-2: Ethereum-aligned = mainnet + ETH-settled rollups (the payment-layer unit the kill
+  // criterion actually names), aggregated over the FULL chain list, not just the top-8 shown.
+  const alignedSet = new Set(ETH_ALIGNED_CHAINS);
+  const ethAlignedUsd = rows.filter((r) => alignedSet.has(r.name)).reduce((a, r) => a + r.usd, 0);
   const top = rows.sort((a, b) => b.usd - a.usd).slice(0, 8).map((r) => ({ name: r.name, usd: Math.round(r.usd), sharePct: r2((r.usd / total) * 100, 1) }));
-  return { totalUsd: Math.round(total), ethUsd: Math.round(eth?.usd || 0), ethSharePct: r2(((eth?.usd || 0) / total) * 100, 1), byChain: top };
+  return {
+    totalUsd: Math.round(total),
+    ethUsd: Math.round(eth?.usd || 0),
+    ethSharePct: r2(((eth?.usd || 0) / total) * 100, 1),
+    ethAlignedUsd: Math.round(ethAlignedUsd),
+    ethAlignedSharePct: r2((ethAlignedUsd / total) * 100, 1),
+    byChain: top,
+  };
 }
 
 async function getChains() {
@@ -654,6 +666,15 @@ async function run() {
     net30dEth: auto.supply?.net30dEth ?? null,
     l1FeesUsd: auto.fees?.l1FeesLatestUsd ?? null,
     ethMaxLltvPct: auto.collateral?.ethMaxLltvPct ?? null,
+    // kill-criteria series (KC-2/3/5/6) — logged so the flow/persistence legs accrue
+    rwaEthSharePct: auto.rwa?.ethSharePct ?? null,
+    stablecoinEthAlignedSharePct: auto.stablecoins?.ethAlignedSharePct ?? null,
+    ethChainSharePct: auto.chains?.ethSharePct ?? null,
+    solChainSharePct: auto.chains?.solanaSharePct ?? null,
+    netIssuancePctPerYr:
+      typeof auto.supply?.net30dEth === 'number' && auto.supply?.totalSupplyEth > 0
+        ? r2((auto.supply.net30dEth / 30) * 365 / auto.supply.totalSupplyEth * 100, 2)
+        : null,
     scores: Object.fromEntries(chi.components.map((c) => [c.key, c.score])),
   };
   fs.appendFileSync(F_NDJSON, JSON.stringify(row) + '\n');

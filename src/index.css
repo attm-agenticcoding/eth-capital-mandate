@@ -211,6 +211,29 @@ table.codif td { padding: 5px 6px; border-bottom: 1px solid #131b26; color: var(
 .sl-bar span { display: block; height: 100%; }
 .sl-pct { width: 44px; text-align: right; color: #d6e2ee; }
 
+/* ---- kill criteria ---- */
+.kill-summary { display: flex; align-items: center; gap: 18px; padding: 12px 14px; margin-bottom: 14px; border: 1px solid var(--border2); border-radius: 10px; background: linear-gradient(180deg, #121b27, #0d131c); }
+.kill-summary.fired { border-color: #4a2620; background: linear-gradient(180deg, #1c100d, #120c0c); }
+.kill-count { text-align: center; min-width: 92px; }
+.kill-num { font: 800 40px/0.95 var(--mono); color: #eef4fa; }
+.kill-num .kill-den { font-size: 18px; color: var(--muted); font-weight: 600; }
+.kill-count-l { display: block; font-size: 10px; color: var(--text2); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
+.kill-legend { display: grid; gap: 8px; }
+.kill-pills { display: flex; gap: 7px; flex-wrap: wrap; }
+.kill-rule { font-size: 11.5px; color: #8693a2; line-height: 1.45; margin: 0; }
+.kill-summary.fired .kill-rule { color: #f0b6ab; }
+.kc-pill { font: 700 11px/1 var(--mono); padding: 4px 8px; border-radius: 12px; border: 1px solid; letter-spacing: 0.3px; white-space: nowrap; }
+.kc-pill.kc-hit { color: var(--red); border-color: #4a2620; background: #1c100d; }
+.kc-pill.kc-watch { color: var(--amber); border-color: #4a3f23; background: #1a160f; }
+.kc-pill.kc-intact { color: var(--green); border-color: #234a3a; background: #0f1a16; }
+.kc-pill.kc-awaiting { color: var(--text2); border-color: var(--border2); background: #0f1722; }
+.kill-card { border-left-width: 3px; }
+.kill-card.kc-hit { border-left-color: var(--red); }
+.kill-card.kc-watch { border-left-color: var(--amber); }
+.kill-card.kc-intact { border-left-color: var(--green); }
+.kill-card.kc-awaiting { border-left-color: var(--border2); }
+@media (max-width: 520px) { .kill-summary { flex-direction: column; align-items: flex-start; gap: 12px; } }
+
 /* ---- footer ---- */
 .footer { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--border); display: grid; gap: 7px; }
 .disclaimer { color: #d6e2ee; font-size: 13px; }
