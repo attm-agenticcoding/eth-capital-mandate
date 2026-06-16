@@ -57,7 +57,7 @@ function CodificationCard() {
     <div className="factory-card">
       <div className="factory-head">
         <span className="factory-title">Codification depth</span>
-        <span className="prior-chip">= CHI-4, expanded</span>
+        <span className="prior-chip">CHI-4 · unscored milestone</span>
       </div>
       <p className="factory-q">Regulated venues listing ETH on a collateral eligibility schedule — asset form, haircut, live date.</p>
       {venues.length === 0 ? (

@@ -36,9 +36,10 @@ export default function App() {
       <footer className="footer">
         <p className="disclaimer"><b>Probabilities are a stated analyst prior, not a model output. Not investment advice.</b></p>
         <p className="muted">
-          Auto metrics refresh every 6h via GitHub Actions — the commit log is the longitudinal record. Manual,
-          thesis-critical components (CHI-2/3/4/6 and the factory cards) are human-curated and do not move on their own.
-          Sources: CoinGecko · DefiLlama · ultrasound.money · growthepie · L2BEAT. Snapshot {fmtUtc(generatedUtc)}.
+          The CHI is fully auto-scored (CHI-1/3/5) and refreshes every 6h via GitHub Actions — the commit log is the
+          longitudinal record. CHI-1 keeps a manual stress-confirm leg; the institutional watch (CHI-4) and the factory
+          cards are user-fed milestones that do not move the index. Sources: CoinGecko · DefiLlama · Morpho ·
+          ultrasound.money · growthepie · L2BEAT. Snapshot {fmtUtc(generatedUtc)}.
         </p>
       </footer>
     </div>

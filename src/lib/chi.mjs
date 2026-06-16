@@ -7,7 +7,21 @@
 // Thesis under test: ETH's only durable value channel is becoming the *capital
 // stock* of open on-chain finance (native, non-freezable, slashable, yield-bearing
 // collateral) — NOT transaction fees. CHI scores how hard the "market convention"
-// factory is setting. Each of 6 components scores 0 / 0.5 / 1 (max 6).
+// factory is setting.
+//
+// As of 2026-06-15 the scored index is FULLY AUTO — 3 components (CHI-1/3/5), each
+// 0 / 0.5 / 1 (max 3). Three former components are off the scored index:
+//   • CHI-2 (demand-side enforcement) — DROPPED: its signal (the market keeping ETH's
+//     collateral primacy) is already what CHI-1's net ETH-vs-stable collateral drift
+//     measures, and its counterfactual leg ("restrict ETH → lose share") is unattributable.
+//   • CHI-4 (institutional tabularization) — DEMOTED to an unscored milestone: the
+//     evidence (regulated collateral schedules / clearinghouse rulebooks, "live vs
+//     announced", haircut reads) has no keyless feed, so it is user-fed and does NOT
+//     move the index. Rendered in the Factory watch panel ("Codification depth" card).
+//   • CHI-6 (duration) — DROPPED: on-chain fixed-term ETH credit is <$5M and dormant
+//     (Notional V3 → $0; Pendle is a RATE/yield market, not collateral credit), with no
+//     keyless maturity feed. A term structure for ETH credit does not exist on-chain yet —
+//     there is nothing faithful to score.
 
 export const STATED_PRIOR = {
   // Label everywhere as a STATED ANALYST PRIOR, not a model output.
@@ -16,13 +30,15 @@ export const STATED_PRIOR = {
   fairValueMcapUsdT: [0.15, 0.3], // thesis-FALSE fair value, market cap (≈ $1,200–2,500/coin × ~120.7M ETH)
 };
 
-// CHI total -> probability band. Evaluated top-down.
+// CHI total -> probability band. Evaluated top-down. Thresholds rescaled to the 3-component
+// (max 3) index; the probability priors themselves are unchanged. On track ≥2.5 (83%),
+// Hardening ≥1.5 (50%), Schelling-retired ≤0.5 + CHI-3 reverse lit.
 export function mapProbabilities(total, reverseLit) {
-  if (total >= 5.0)
+  if (total >= 2.5)
     return { branchPct: 53, p10k: 45, p20k: 22, status: 'On track', tone: 'good' };
-  if (total >= 3.5)
+  if (total >= 1.5)
     return { branchPct: 42, p10k: 38, p20k: 17, status: 'Hardening', tone: 'warm' };
-  if (total <= 1.5 && reverseLit)
+  if (total <= 0.5 && reverseLit)
     return {
       branchPct: 25, p10k: null, p20k: null,
       status: 'Thesis dying', label: 'Schelling thesis RETIRED', tone: 'dead',
@@ -30,7 +46,7 @@ export function mapProbabilities(total, reverseLit) {
   return { branchPct: 32, p10k: 30, p20k: 12, status: 'Stalled / awaiting', tone: 'base' };
 }
 
-// Static metadata for each component. `mode` drives the AUTO/MANUAL badge.
+// Static metadata for each SCORED component. `mode` drives the AUTO/MANUAL badge.
 export const CHI_COMPONENTS = [
   {
     id: 'CHI-1', key: 'chi1', name: 'Stress survival', mode: 'auto+manual',
@@ -39,34 +55,16 @@ export const CHI_COMPONENTS = [
     source: { label: 'DefiLlama + Morpho API + CoinGecko', url: 'https://defillama.com/protocol/aave-v3' },
   },
   {
-    id: 'CHI-2', key: 'chi2', name: 'Demand-side enforcement', mode: 'manual',
-    threshold:
-      'A venue restricting ETH collateral demonstrably loses TVL share, OR ETH retains the top LTV tier in venues that also list tokenized-treasury collateral.',
-    source: { label: 'manual', url: '' },
-  },
-  {
     id: 'CHI-3', key: 'chi3', name: 'Slashable ETH bond demand', mode: 'auto',
     threshold:
       'ETH restaked across EigenLayer / Symbiotic / Karak, ETH-denominated (price-stripped). Lights at ≥5M ETH bonded; ≥1M = partial; reverse (Schelling-retired) if it collapses <1M. Headline TVL over-reads — points-farming, LST double-count, non-live-slashing AVSs.',
     source: { label: 'DefiLlama Restaking', url: 'https://defillama.com/protocols/Restaking' },
   },
   {
-    id: 'CHI-4', key: 'chi4', name: 'Institutional tabularization', mode: 'manual',
+    id: 'CHI-5', key: 'chi5', name: 'Volatility / haircut regime', mode: 'auto',
     threshold:
-      '≥2 regulated venues (prime broker, CCP/clearinghouse, or regulated margin program) list ETH on a collateral eligibility schedule with haircut ≤40%, LIVE (not announced).',
-    source: { label: 'manual', url: '' },
-  },
-  {
-    id: 'CHI-5', key: 'chi5', name: 'Volatility / haircut regime', mode: 'auto+manual',
-    threshold:
-      'ETH trailing-365d realized vol persistently <50% (annualized, daily log returns; persistent = <50% for ≥2 consecutive quarters) AND regulated-venue haircut quotes trending down.',
-    source: { label: 'CoinGecko + manual', url: 'https://www.coingecko.com/en/coins/ethereum' },
-  },
-  {
-    id: 'CHI-6', key: 'chi6', name: 'Duration', mode: 'manual',
-    threshold:
-      'Fixed-term (≥90-day) borrowing against ETH collateral ≥10% of total ETH-collateralized debt (Pendle / Morpho fixed-term / Term Finance / Notional).',
-    source: { label: 'manual', url: '' },
+      'ETH trailing-365d realized vol persistently <50% (annualized daily log returns; persistent = ≥2 consecutive quarters) AND ETH\'s on-chain max-LTV tier rising (= haircut compressing) across Aave/Morpho.',
+    source: { label: 'CoinGecko + Morpho API', url: 'https://www.coingecko.com/en/coins/ethereum' },
   },
 ];
 
@@ -108,20 +106,6 @@ function chi1(auto, manual) {
   return { score, valueText, detail };
 }
 
-// CHI-2: MANUAL (semi-auto support).
-function chi2(_auto, manual) {
-  const m = manual?.chi2_demand_enforcement || {};
-  const score = m.lit === true ? 1 : 0;
-  return {
-    score,
-    valueText: m.lit === true ? 'Lit — eligibility premium survived competition' : 'Awaiting',
-    detail:
-      m.note ||
-      'Lights when an ETH-restricting venue loses TVL share, or ETH keeps the top LTV tier where tokenized-treasuries also compete.',
-    source: m.source || '',
-  };
-}
-
 // CHI-3: AUTO. ETH used as a slashable security bond — proxied by ETH restaked
 // (EigenLayer + Symbiotic + Karak), ETH-denominated to strip price. Caveat: headline
 // restaking TVL includes points-farming, LST double-counting and non-live-slashing
@@ -142,76 +126,54 @@ function chi3(auto, _manual) {
     reverse,
     valueText: `${m}M ETH restaked${ratio !== null ? ` · ${ratio}% of staked ETH` : ''}`,
     detail: reverse
-      ? 'REVERSE SIGNAL: ETH restaked has collapsed below 1M — generalized slashable-bond demand is failing. If CHI ≤ 1.5 the Schelling thesis is flagged RETIRED.'
+      ? 'REVERSE SIGNAL: ETH restaked has collapsed below 1M — generalized slashable-bond demand is failing. If CHI ≤ 1.0 the Schelling thesis is flagged RETIRED.'
       : `${m}M ETH restaked (EigenLayer+Symbiotic+Karak, ETH-denominated). Lights at ≥5M; ≥1M = partial. NB: headline TVL over-reads real demand (points-farming, LST double-count, non-live-slashing AVSs).`,
   };
 }
 
-// CHI-4: MANUAL.
-function chi4(_auto, manual) {
-  const m = manual?.chi4_institutional || {};
-  const venues = Array.isArray(m.venues)
-    ? m.venues.filter((v) => v && v.live && typeof v.haircut_pct === 'number' && v.haircut_pct <= 40)
-    : [];
-  let score = 0;
-  if (venues.length >= 2) score = 1;
-  else if (venues.length === 1) score = 0.5;
-  return {
-    score,
-    valueText: venues.length ? `${venues.length} live venue(s), haircut ≤40%` : 'Awaiting — 0 live regulated venues',
-    detail: 'Lights at ≥2 regulated venues (PB / CCP / margin program) listing ETH on a collateral schedule with haircut ≤40%, LIVE.',
-  };
-}
-
-// CHI-5: AUTO (vol) + MANUAL (haircut trend).
-function chi5(auto, manual) {
+// CHI-5: AUTO (both legs). Leg 1 — trailing-365d realized vol <50% for ≥2 quarters.
+// Leg 2 — ETH's on-chain max-LTV tier is RISING (haircut compressing): on-chain LTV is
+// literally a haircut (LTV 86% = 14% haircut), so a rising max-LTV across Aave/Morpho is
+// the on-chain analog of regulated-venue haircuts trending down. The trend delta is
+// computed in fetch.mjs against the longitudinal log; it is null until ≥1 prior reading
+// exists, so the haircut leg stays unconfirmed (no day-1 inflation), then accrues.
+function chi5(auto, _manual) {
   const vol365 = num(auto?.vol?.d365Pct);
   const vol30 = num(auto?.vol?.d30Pct);
   const quartersUnder = num(auto?.vol?.quartersUnder50);
-  const m = manual?.chi5_haircut_trend || {};
+  const lltv = num(auto?.collateral?.ethMaxLltvPct);
+  const lltvDelta = num(auto?.collateral?.ethMaxLltvDeltaPp);
+
   const under50 = vol365 !== null && vol365 < 50;
   // Persistence: ≥2 consecutive quarters <50%. Accrues from history; until we have
   // ≥2 quarters of our own record, fall back to the current reading.
   const persistent = quartersUnder !== null ? quartersUnder >= 2 : under50;
-  const autoLeg = under50 && persistent;
-  const compressing = m.compressing === true;
-  const legs = (autoLeg ? 1 : 0) + (compressing ? 1 : 0);
+  const volLeg = under50 && persistent;
+
+  // Haircut compressing = on-chain max-LTV up ≥1pp since the first logged reading.
+  const compressing = lltvDelta !== null && lltvDelta >= 1;
+  const legs = (volLeg ? 1 : 0) + (compressing ? 1 : 0);
   const score = legs === 2 ? 1 : legs === 1 ? 0.5 : 0;
+
+  const lltvTxt = lltv !== null
+    ? ` · ETH max-LTV ${lltv.toFixed(0)}%${lltvDelta !== null ? ` (${lltvDelta >= 0 ? '+' : ''}${lltvDelta}pp)` : ''}`
+    : '';
   const valueText =
     vol365 !== null
-      ? `RV365 ${vol365.toFixed(0)}% ${under50 ? '(<50% ✓)' : '(≥50%)'} · RV30 ${vol30 !== null ? vol30.toFixed(0) + '%' : '—'}`
+      ? `RV365 ${vol365.toFixed(0)}% ${under50 ? '(<50% ✓)' : '(≥50%)'} · RV30 ${vol30 !== null ? vol30.toFixed(0) + '%' : '—'}${lltvTxt}`
       : 'Awaiting vol';
   return {
     score,
     valueText,
-    detail: `Auto leg — trailing-365d realized vol <50% for ≥2 quarters: ${autoLeg ? 'met' : 'not met'}. Manual leg — regulated-venue haircuts compressing: ${compressing ? 'confirmed' : 'unconfirmed'}.`,
+    detail: `Vol leg — trailing-365d realized vol <50% for ≥2 quarters: ${volLeg ? 'met' : 'not met'}. On-chain haircut leg — ETH max-LTV (Aave/Morpho) compressing the haircut: ${compressing ? 'confirmed (rising)' : lltvDelta === null ? 'accruing (need a prior reading)' : 'not compressing'}${lltv !== null ? ` · current haircut ≈ ${(100 - lltv).toFixed(0)}%` : ''}.`,
   };
 }
 
-// CHI-6: MANUAL (semi-auto).
-function chi6(_auto, manual) {
-  const pct = num(manual?.chi6_term_share_pct);
-  if (pct === null) {
-    return {
-      score: 0,
-      valueText: 'Awaiting',
-      detail: 'Fixed-term (≥90d) ETH-collateral borrowing as a share of total ETH-collateral debt. Lights at ≥10%.',
-    };
-  }
-  let score = 0;
-  if (pct >= 10) score = 1;
-  else if (pct >= 5) score = 0.5;
-  return {
-    score,
-    valueText: `${pct}% in fixed-term (≥90d) borrowing`,
-    detail: 'Lights at ≥10% of ETH-collateral debt in fixed-term (≥90d) borrowing (Pendle / Morpho fixed-term / Term / Notional).',
-  };
-}
-
-const SCORERS = { chi1, chi2, chi3, chi4, chi5, chi6 };
+const SCORERS = { chi1, chi3, chi5 };
 
 // computeCHI(snapshot) where snapshot = { auto, manual } (the latest.json object works
-// directly). Returns components + total + probabilities, recomputed live.
+// directly). Returns the 3 scored components + total + probabilities. CHI-4 (institutional)
+// is an unscored milestone rendered separately in the Factory watch panel.
 export function computeCHI(snapshot) {
   const auto = snapshot?.auto || {};
   const manual = snapshot?.manual || {};

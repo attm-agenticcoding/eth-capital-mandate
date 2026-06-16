@@ -4,13 +4,17 @@ import { Sparkline } from './charts.jsx';
 import { PanelHead } from './ui.jsx';
 
 // Auto components get a sparkline of their underlying metric (rich from day 1);
-// manual components fall back to their score history (accrues over time).
+// the rest fall back to their score history (accrues over time).
 const UNDERLYING = {
   chi1: (auto.collateral?.drift || []).map((d) => ({ t: d.t, v: d.ethPct })),
   chi5: auto.vol?.series || [],
 };
 const SPARK_COLOR = { chi1: '#62d2a2', chi5: '#e8b339' };
-const STALE = { chi1: auto.collateral?.stale, chi5: auto._market?.stale };
+const STALE = {
+  chi1: auto.collateral?.stale,
+  chi3: auto.restaking?.stale,
+  chi5: auto._market?.stale,
+};
 const manualUpdated = manual._updated ? new Date(manual._updated).toISOString() : null;
 
 const scoreColor = (s) => (s >= 1 ? '#62d2a2' : s >= 0.5 ? '#e8b339' : '#5b6675');
@@ -53,12 +57,12 @@ function ChiCard({ c }) {
 
 function ProbMap() {
   const t = chi.total, rev = chi.reverseLit;
-  const active = t >= 5 ? 'on' : t >= 3.5 ? 'hard' : t <= 1.5 && rev ? 'dead' : 'base';
+  const active = t >= 2.5 ? 'on' : t >= 1.5 ? 'hard' : t <= 0.5 && rev ? 'dead' : 'base';
   const rows = [
-    { k: 'on', cond: 'CHI ≥ 5.0', branch: '53%', p10: '45%', p20: '22%', status: 'On track' },
-    { k: 'hard', cond: 'CHI ≥ 3.5', branch: '42%', p10: '38%', p20: '17%', status: 'Hardening' },
+    { k: 'on', cond: 'CHI ≥ 2.5', branch: '53%', p10: '45%', p20: '22%', status: 'On track' },
+    { k: 'hard', cond: 'CHI ≥ 1.5', branch: '42%', p10: '38%', p20: '17%', status: 'Hardening' },
     { k: 'base', cond: 'else', branch: '32%', p10: '30%', p20: '12%', status: 'Stalled / awaiting' },
-    { k: 'dead', cond: 'CHI ≤ 1.5 + CHI-3 reverse lit', branch: '25%', p10: '—', p20: '—', status: 'Schelling RETIRED' },
+    { k: 'dead', cond: 'CHI ≤ 0.5 + CHI-3 reverse lit', branch: '25%', p10: '—', p20: '—', status: 'Schelling RETIRED' },
   ];
   return (
     <div className="probmap">
@@ -82,10 +86,16 @@ function ProbMap() {
 export function ChiGrid() {
   return (
     <section className="panel">
-      <PanelHead title="Convention Hardening Index" sub="Factory #1 — market convention · 6 components, each 0 / 0.5 / 1 · max 6" />
+      <PanelHead title="Convention Hardening Index" sub="Factory #1 — market convention · 3 auto-scored components, each 0 / 0.5 / 1 · max 3" />
       <div className="chi-grid">
         {chi.components.map((c) => <ChiCard key={c.id} c={c} />)}
       </div>
+      <p className="chi-note muted">
+        Numbering keeps the original IDs. <b>CHI-2</b> (demand-side enforcement) and <b>CHI-6</b> (duration) were
+        retired — CHI-2's signal is already in CHI-1's net ETH-vs-stable collateral drift, and a fixed-term ETH-credit
+        market barely exists on-chain (&lt;$5M vs ~$13.5B variable-rate) with no keyless feed. <b>CHI-4</b>
+        (institutional collateral) is an unscored, user-fed milestone — tracked in <b>Factory watch</b> below, not in the index.
+      </p>
       <ProbMap />
     </section>
   );

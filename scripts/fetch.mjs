@@ -245,13 +245,14 @@ async function morphoNetCollateral() {
   };
   let skip = 0, all = [];
   for (;;) {
-    const d = await gql(`{ markets(first: 200, skip: ${skip}, where: { chainId_in: [1] }, orderBy: SupplyAssetsUsd, orderDirection: Desc) { items { listed loanAsset { symbol } collateralAsset { symbol } state { collateralAssetsUsd borrowAssetsUsd } } } }`);
+    const d = await gql(`{ markets(first: 200, skip: ${skip}, where: { chainId_in: [1] }, orderBy: SupplyAssetsUsd, orderDirection: Desc) { items { listed lltv loanAsset { symbol } collateralAsset { symbol } state { collateralAssetsUsd borrowAssetsUsd } } } }`);
     const items = d?.markets?.items || [];
     all = all.concat(items);
     if (items.length < 200) break;
     skip += 200;
   }
   const b = { eth: 0, stable: 0, btc: 0, other: 0 };
+  let ethMaxLltv = 0; // ETH's top on-chain LTV tier (= 1 − haircut), liquidity-gated
   for (const m of all) {
     if (!m.listed || !m.collateralAsset || !(m.state?.collateralAssetsUsd > 0)) continue;
     const cc = classifyToken(m.collateralAsset.symbol);
@@ -259,8 +260,14 @@ async function morphoNetCollateral() {
     const coll = m.state.collateralAssetsUsd || 0;
     const borrow = m.state.borrowAssetsUsd || 0;
     b[cc] += Math.max(0, coll - (cc === lc ? borrow : 0)); // rule B: net same-class
+    // ETH's haircut tier when backing UNCORRELATED debt — exclude ETH↔ETH loops, which
+    // carry near-100% LTV and would overstate the collateral-grade haircut.
+    if (cc === 'eth' && lc !== 'eth' && coll >= 1e6) {
+      const lltv = Number(m.lltv) / 1e18;
+      if (isFinite(lltv) && lltv > ethMaxLltv) ethMaxLltv = lltv;
+    }
   }
-  return b;
+  return { buckets: b, ethMaxLltvPct: ethMaxLltv > 0 ? r2(ethMaxLltv * 100, 1) : null };
 }
 
 // TRUE net-collateral composition across Aave v3 + Morpho Blue + Sky. This replaces a
@@ -275,8 +282,8 @@ async function getCollateral() {
   const sky = await firstVenue('Sky', ['makerdao', 'sky']);
   if (!aave && !sky) throw new Error('collateral: no venue token data');
 
-  let morpho = null; // best-effort: degrade to Aave+Sky if Morpho's API is unreachable
-  try { morpho = await withRetry(() => morphoNetCollateral(), 2, 1500); }
+  let morpho = null, morphoEthMaxLltvPct = null; // best-effort: degrade to Aave+Sky if Morpho's API is unreachable
+  try { const mr = await withRetry(() => morphoNetCollateral(), 2, 1500); morpho = mr.buckets; morphoEthMaxLltvPct = mr.ethMaxLltvPct; }
   catch (e) { console.warn(`! morpho collateral failed: ${e.message}`); }
 
   const skyColl = (b) => ({ ...b, stable: 0 }); // Sky: drop PSM/savings, keep vault collateral
@@ -321,6 +328,7 @@ async function getCollateral() {
     combinedEthShareDeltaPp,
     driftWindowMonths: drift.length,
     combinedTotalUsd: Math.round(ctot),
+    ethMaxLltvPct: morphoEthMaxLltvPct, // CHI-5: ETH's top on-chain LTV tier (= 1 − haircut), Morpho-measured
     venuesUsed: perVenue.map((v) => v.name),
     morphoOk: !!morpho,
     method: 'NET collateral (rule B): Aave DL-net + Morpho per-market net + Sky vault-only (USDC PSM/savings excluded). Morpho held flat across the 18m drift (no per-market history).',
@@ -582,6 +590,19 @@ async function run() {
     restaking.restakedToStakedPct = _stakedEth > 0 ? r2((restaking.restakedEth / _stakedEth) * 100, 1) : null;
   }
 
+  // CHI-5 haircut leg: trend of ETH's on-chain max LTV (compressing haircut = rising LTV).
+  // Computed here (needs the longitudinal log) against the oldest logged reading; chi.mjs
+  // stays pure and just reads the precomputed delta. Null until ≥1 prior reading exists.
+  if (collateral && typeof collateral.ethMaxLltvPct === 'number') {
+    let histRows = [];
+    try {
+      histRows = fs.readFileSync(F_NDJSON, 'utf8').trim().split('\n').filter(Boolean)
+        .map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    } catch {}
+    const past = histRows.map((r) => r.ethMaxLltvPct).filter((v) => typeof v === 'number');
+    if (past.length) collateral.ethMaxLltvDeltaPp = r2(collateral.ethMaxLltvPct - past[0], 1);
+  }
+
   const auto = {
     eth: market.eth || carry('_market').eth,
     btc: market.btc,
@@ -632,6 +653,7 @@ async function run() {
     stakingPct: auto.supply?.stakingPct ?? null,
     net30dEth: auto.supply?.net30dEth ?? null,
     l1FeesUsd: auto.fees?.l1FeesLatestUsd ?? null,
+    ethMaxLltvPct: auto.collateral?.ethMaxLltvPct ?? null,
     scores: Object.fromEntries(chi.components.map((c) => [c.key, c.score])),
   };
   fs.appendFileSync(F_NDJSON, JSON.stringify(row) + '\n');
@@ -642,8 +664,10 @@ async function run() {
   fs.writeFileSync(F_HISTJSON, JSON.stringify(hist, null, 0));
 
   const ok = sources.filter((s) => s.ok).length;
-  console.log(`\n✓ wrote latest.json — CHI ${chi.total}/6 (${chi.litCount} lit) → branch ${chi.probabilities.branchPct}% · ${chi.probabilities.status}`);
+  console.log(`\n✓ wrote latest.json — CHI ${chi.total}/${chi.components.length} (${chi.litCount} lit) → branch ${chi.probabilities.branchPct}% · ${chi.probabilities.status}`);
   console.log(`  ETH $${auto.eth?.price} · ETH/BTC ${auto.ratio?.now} · vol365 ${auto.vol?.d365Pct}% · corr90 ${auto.correlation?.now} · ETH-collateral ${auto.collateral?.combinedEthSharePct}% · staked ${auto.supply?.stakingPct}%`);
+  const _lltvDelta = auto.collateral?.ethMaxLltvDeltaPp;
+  console.log(`  restaked ${auto.restaking?.restakedEth?.toLocaleString?.()} ETH · ETH max-LTV ${auto.collateral?.ethMaxLltvPct}%${_lltvDelta != null ? ` (Δ ${_lltvDelta}pp)` : ' (Δ n/a)'}`);
   console.log(`  sources ok: ${ok}/${sources.length}${ok < sources.length ? ' — ' + sources.filter((s) => !s.ok).map((s) => s.key).join(',') + ' carried forward' : ''}`);
   if (ok === 0) process.exit(1);
 }

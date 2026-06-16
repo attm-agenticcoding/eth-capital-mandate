@@ -4,7 +4,7 @@ A public, auto-updating dashboard that tracks **one** thesis: that ETH's only du
 **capital stock of open on-chain finance** — native, non-freezable, slashable, yield-bearing collateral — **not**
 transaction fees.
 
-It scores a **Convention Hardening Index (CHI)** (6 components, 0–6), runs a **factory watch** and a
+It scores a **Convention Hardening Index (CHI)** (3 **auto-scored** components, 0–3), runs a **factory watch** and a
 **bear-confirmation panel**, and maps the live CHI to pre-set probability bands.
 
 > Probabilities are a **stated analyst prior, not a model output**. Not investment advice.
@@ -27,66 +27,64 @@ It scores a **Convention Hardening Index (CHI)** (6 components, 0–6), runs a *
 ### Guardrails
 - **Never fabricate.** API failure → the previous good value is carried forward and stamped `stale`. A manual field
   left unset renders **"Awaiting"**, never a fake number.
-- Some thesis-critical components (**CHI-4**, protocol factory) remain **MANUAL by necessity** — no API exists.
-  The UI badges these clearly; they do **not** move on their own. (**CHI-3 is now AUTO** — ETH restaked via DefiLlama.)
+- The scored index is **fully auto** (CHI-1/3/5). CHI-1 keeps a manual *stress-confirm* leg that only matters
+  during a ≥50% drawdown. Two signals with **no keyless feed** are kept off the scored index: **CHI-4**
+  (institutional collateral) and the **protocol factory** — user-fed milestones shown in the Factory watch that do
+  **not** move on their own. (**CHI-2** and **CHI-6** were retired — CHI-2's signal is already in CHI-1's net
+  collateral drift; on-chain fixed-term ETH credit barely exists and has no feed.)
 
 ---
 
-## The 6 CHI components — exactly what lights each
+## The CHI components — exactly what lights each
 
-Each scores **0 / 0.5 / 1** (max 6). 🟢 = auto-fetched, ✍️ = you curate it in `data/manual.json`.
+The scored index is **3 auto components**, each **0 / 0.5 / 1** (max 3). 🟢 = auto-fetched from a keyless API; CHI-1 also has a manual stress-confirm leg (🟢+✍️).
 
 | # | Component | Mode | Lights (= 1) when |
 |---|-----------|------|-------------------|
-| **CHI-1** | Stress survival | 🟢+✍️ | Through any **≥50% ETH drawdown**, the ETH-system **net** collateral share across Aave/Morpho/Sky falls **≤5pp** AND no top venue delists ETH or cuts max LTV >10pp. **Seeded at 0.5** (2022 passed eligibility, but stable/T-bill collateral wasn't at scale — the real test is the *next* ≥50% drawdown). Auto-tracks the **net** ETH collateral share — Sky's USDC PSM, pure lenders and same-class loops (wstETH→ETH, sUSDe carries) are excluded — plus drawdown; you confirm the no-delist leg. |
-| **CHI-2** | Demand-side enforcement | ✍️ | An ETH-restricting venue demonstrably loses TVL share, OR ETH keeps the top LTV tier in venues that **also** list tokenized-treasury collateral. |
-| **CHI-3** | Slashable ETH bond demand | 🟢 | **ETH restaked** across EigenLayer / Symbiotic / Karak, **ETH-denominated** (price-stripped). Lights at **≥5M ETH** bonded; **≥1M** = partial. **Reverse (Schelling-retired):** generalized ETH bonding **collapses <1M ETH** → if CHI ≤ 1.5, thesis flagged **RETIRED**. *Headline TVL over-reads real demand (points-farming, LST double-count, non-live-slashing AVSs) — treat as upper bound.* |
-| **CHI-4** | Institutional tabularization | ✍️ | **≥2 regulated venues** (prime broker, CCP/clearinghouse, or regulated margin program) list ETH on a collateral eligibility schedule at **haircut ≤40%**, **LIVE** (not announced). |
-| **CHI-5** | Volatility / haircut regime | 🟢+✍️ | ETH trailing-365d realized vol **<50% for ≥2 consecutive quarters** (auto) **AND** regulated-venue haircut quotes trending down (manual). |
-| **CHI-6** | Duration | ✍️ | Fixed-term (**≥90-day**) borrowing against ETH collateral **≥10%** of total ETH-collateral debt (Pendle / Morpho fixed-term / Term / Notional). |
+| **CHI-1** | Stress survival | 🟢+✍️ | Through any **≥50% ETH drawdown**, the ETH-system **net** collateral share across Aave/Morpho/Sky falls **≤5pp** AND no top venue delists ETH or cuts max LTV >10pp. **Seeded at 0.5** (the real test is the *next* ≥50% drawdown). Auto-tracks the **net** ETH collateral share — Sky's USDC PSM, pure lenders and same-class loops (wstETH→ETH, sUSDe carries) excluded — plus drawdown; you confirm the no-delist leg only during a crash. |
+| **CHI-3** | Slashable ETH bond demand | 🟢 | **ETH restaked** across EigenLayer / Symbiotic / Karak, **ETH-denominated** (price-stripped). Lights at **≥5M ETH**; **≥1M** = partial. **Reverse (Schelling-retired):** collapses **<1M ETH** → if CHI ≤ 0.5, thesis flagged **RETIRED**. *Headline TVL over-reads — treat as upper bound.* |
+| **CHI-5** | Volatility / haircut regime | 🟢 | ETH trailing-365d realized vol **<50% for ≥2 consecutive quarters** **AND** ETH's **on-chain max-LTV tier rising** (= haircut compressing) across Aave/Morpho. On-chain LTV is literally a haircut (LTV 86% = 14% haircut), measured against uncorrelated debt (ETH↔ETH loops excluded); the trend accrues from our own log. |
 
-Half credit (**0.5**) is awarded for meaningful-but-incomplete progress (e.g. CHI-4 with exactly one live venue; CHI-3 with ≥1 live mandatory system but below the full bar).
+Half credit (**0.5**) is awarded for meaningful-but-incomplete progress (e.g. CHI-3 ≥1M but <5M ETH; CHI-5 with one of the two legs met).
+
+**Retired / off-index.** **CHI-2** (demand-side enforcement) was dropped — its signal is already carried by CHI-1's net ETH-vs-stable collateral drift, and its counterfactual leg ("restrict ETH → lose share") is unattributable. **CHI-6** (duration) was dropped — on-chain fixed-term ETH credit is **<$5M and dormant** (Notional V3 → $0; Pendle is a rate/yield market, not collateral credit) vs ~$13.5B variable-rate ETH collateral, with no keyless maturity feed: a term structure for ETH credit does not exist on-chain yet. **CHI-4** (institutional tabularization — ≥2 regulated venues listing ETH as eligible collateral at haircut ≤40%, **live**) has **no keyless feed**, so it is an **unscored, user-fed milestone** shown in the Factory watch — the highest-confirmation signal, but it does not move the index.
 
 ### CHI → probability mapping (computed live)
 
-| CHI total | Mandate branch | P($10k by ’30) | P($20k) | Status |
+| CHI total (max 3) | Mandate branch | P($10k by ’30) | P($20k) | Status |
 |-----------|----------------|----------------|---------|--------|
-| ≥ 5.0 | 53% | 45% | 22% | On track |
-| ≥ 3.5 | 42% | 38% | 17% | Hardening |
+| ≥ 2.5 | 53% | 45% | 22% | On track |
+| ≥ 1.5 | 42% | 38% | 17% | Hardening |
 | else (current) | 32% | 30% | 12% | Stalled / awaiting |
-| ≤ 1.5 **and** CHI-3 reverse lit | 25% | — | — | **Schelling RETIRED** |
+| ≤ 0.5 **and** CHI-3 reverse lit | 25% | — | — | **Schelling RETIRED** |
 
 ---
 
 ## Editing the manual data
 
-All human-curated inputs live in **`data/manual.json`**. Edit it directly in the **GitHub web UI**
-(pencil icon → commit). The next cron run (or any push) picks it up. **Leave anything you can't source as unset/false.**
+The CHI is **fully auto-scored**, so most inputs need no curation. The only human-curated inputs left live in
+**`data/manual.json`**: CHI-1's stress-confirm leg, the **unscored** institutional watch (CHI-4), and the protocol
+factory watch. Edit it directly in the **GitHub web UI** (pencil → commit); the next cron run (or any push) picks it
+up. **Leave anything you can't source as unset/false.**
 
 ```jsonc
 {
-  "_updated": "2026-06-14",                  // bump when you edit
+  "_updated": "2026-06-15",                     // bump when you edit
 
-  "chi1_stress": {                            // CHI-1 manual leg + stress-episode record
-    "episode_through_50dd": false,            // set true once a ≥50% drawdown completes
-    "share_delta_pp": null,                   // ETH-system collateral share change in pp (negative = fell)
-    "no_delist_or_ltv_cut": null              // true if no top venue delisted ETH / cut max LTV >10pp
+  "chi1_stress": {                              // CHI-1 manual leg — only matters during a ≥50% drawdown
+    "episode_through_50dd": false,              // set true once a ≥50% drawdown completes
+    "share_delta_pp": null,                     // ETH-system collateral share change in pp (negative = fell)
+    "no_delist_or_ltv_cut": null                // true if no top venue delisted ETH / cut max LTV >10pp
   },
 
-  "chi2_demand_enforcement": { "lit": false, "note": "", "source": "" },
-
-  "chi4_institutional": {                     // add one object per regulated venue
+  "chi4_institutional": {                       // UNSCORED watch — add one object per regulated venue
     "venues": [
       { "name": "", "type": "PB|CCP|margin", "asset": "spot|staked",
         "haircut_pct": null, "live": false, "source": "" }
     ]
   },
 
-  "chi5_haircut_trend": { "compressing": null, "note": "", "source": "" },  // true if haircuts trending down
-
-  "chi6_term_share_pct": null,                // % of ETH-collateral debt in fixed-term (≥90d) borrowing
-
-  "factory_protocol": {                       // protocol value-routing watch
+  "factory_protocol": {                         // protocol value-routing watch
     "items": [
       { "name": "blob-fee-floor|mev-burn|native-rollup-eth-bond", "eip": "",
         "status": "idea|draft|cfi|scheduled|live", "fork": "", "source": "" }
@@ -96,8 +94,8 @@ All human-curated inputs live in **`data/manual.json`**. Edit it directly in the
 }
 ```
 
-**What flips each manual component:** see the table above — the JSON keys map 1:1. A component shows **"Awaiting"**
-in the UI until its evidence is filled in. Always attach a `source` URL; never invent values.
+A field left unset renders **"Awaiting"** in the UI. CHI-4's watch lights at ≥2 live venues (haircut ≤40%) but
+**never moves the scored index**. Always attach a `source` URL; never invent values.
 
 ---
 
@@ -120,7 +118,7 @@ fresh snapshot and deployed. To enable: push to GitHub, ensure **Settings → Pa
 
 ## Data sources (all keyless)
 
-CoinGecko (price / vol / correlation) · DefiLlama (Aave/Sky collateral, stablecoins, chains, RWA, restaking) · Morpho Blue API (per-market net collateral) ·
+CoinGecko (price / vol / correlation) · DefiLlama (Aave/Sky collateral, stablecoins, chains, RWA, restaking) · Morpho Blue API (per-market net collateral + ETH on-chain max-LTV) ·
 ultrasound.money (supply, staking, issuance/burn) · growthepie.xyz (L1+blob fees, L2→L1 economics) · L2BEAT (L2 TVL).
 
 ---
