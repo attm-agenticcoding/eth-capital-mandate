@@ -26,8 +26,8 @@ export function VerdictBanner() {
     <section className={`verdict tone-${p.tone}`}>
       <div className="verdict-left">
         <div className="chi-score">
-          <div className="chi-num">{chi.total.toFixed(1)}<span className="chi-den">/6</span></div>
-          <div className="chi-lit">{chi.litCount} of 6 components lit&nbsp;(≥0.5)</div>
+          <div className="chi-num">{chi.total.toFixed(1)}<span className="chi-den">/{chi.components.length}</span></div>
+          <div className="chi-lit">{chi.litCount} of {chi.components.length} components lit&nbsp;(≥0.5)</div>
         </div>
         <div className="verdict-status">
           <div className={`status-pill tone-${p.tone}`}>{p.label || p.status}</div>
