@@ -287,6 +287,21 @@ async function getCollateral() {
   try { const mr = await withRetry(() => morphoNetCollateral(), 2, 1500); morpho = mr.buckets; morphoEthMaxLltvPct = mr.ethMaxLltvPct; }
   catch (e) { console.warn(`! morpho collateral failed: ${e.message}`); }
 
+  // A1: field-level health for the CHI-5 haircut leg, DISTINCT from the coarse per-source
+  // record(). 'ok' = measured this run; 'stale' = sub-fetch unavailable but a prior good
+  // value is carried forward; 'failed' = unavailable with no prior value. This lets chi5
+  // say "feed broken" instead of the misleading "accruing" when the Morpho leg is dead.
+  let ethMaxLltvPct, ethMaxLltvStatus;
+  if (morpho && typeof morphoEthMaxLltvPct === 'number') {
+    ethMaxLltvPct = morphoEthMaxLltvPct;
+    ethMaxLltvStatus = 'ok';
+  } else {
+    const carried = typeof prev?.auto?.collateral?.ethMaxLltvPct === 'number' ? prev.auto.collateral.ethMaxLltvPct : null;
+    ethMaxLltvPct = carried;
+    ethMaxLltvStatus = carried !== null ? 'stale' : 'failed';
+    console.warn(`! ETH max-LTV unavailable → status=${ethMaxLltvStatus}${carried !== null ? ` (carried ${carried}%)` : ''}`);
+  }
+
   const skyColl = (b) => ({ ...b, stable: 0 }); // Sky: drop PSM/savings, keep vault collateral
 
   // current snapshot
@@ -329,7 +344,8 @@ async function getCollateral() {
     combinedEthShareDeltaPp,
     driftWindowMonths: drift.length,
     combinedTotalUsd: Math.round(ctot),
-    ethMaxLltvPct: morphoEthMaxLltvPct, // CHI-5: ETH's top on-chain LTV tier (= 1 − haircut), Morpho-measured
+    ethMaxLltvPct, // CHI-5: ETH's top on-chain LTV tier (= 1 − haircut), Morpho-measured
+    ethMaxLltvStatus, // A1: 'ok' | 'stale' | 'failed' — field-level health of the haircut leg
     venuesUsed: perVenue.map((v) => v.name),
     morphoOk: !!morpho,
     method: 'NET collateral (rule B): Aave DL-net + Morpho per-market net + Sky vault-only (USDC PSM/savings excluded). Morpho held flat across the 18m drift (no per-market history).',
@@ -605,7 +621,7 @@ async function run() {
   // CHI-5 haircut leg: trend of ETH's on-chain max LTV (compressing haircut = rising LTV).
   // Computed here (needs the longitudinal log) against the oldest logged reading; chi.mjs
   // stays pure and just reads the precomputed delta. Null until ≥1 prior reading exists.
-  if (collateral && typeof collateral.ethMaxLltvPct === 'number') {
+  if (collateral && collateral.ethMaxLltvStatus === 'ok' && typeof collateral.ethMaxLltvPct === 'number') {
     let histRows = [];
     try {
       histRows = fs.readFileSync(F_NDJSON, 'utf8').trim().split('\n').filter(Boolean)

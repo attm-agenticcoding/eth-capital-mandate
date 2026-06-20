@@ -72,4 +72,50 @@ test('baseline · kill statuses (KC-1 watch, KC-2/3/5/6 intact, KC-4/7 awaiting)
   assert.equal(byId['KC-7'].status, 'awaiting');
 });
 
+// ====================================================================== A1
+// CHI-5 haircut leg: a BROKEN feed must read distinctly from genuinely-accruing data.
+const chi5DetailOf = (snap) => chiOf(snap).byId['CHI-5'].detail;
+
+test('A1 · current snapshot is unchanged — CHI-5 still scores 0, reads "not compressing"', () => {
+  const c = chiOf(current).byId['CHI-5'];
+  assert.equal(c.score, 0);
+  assert.match(c.detail, /not compressing/);
+  assert.doesNotMatch(c.detail, /accruing|broken/);
+});
+
+test('A1a · failed feed → detail says broken/unavailable, NOT accruing', () => {
+  const snap = clone(current);
+  snap.auto.collateral.ethMaxLltvStatus = 'failed';
+  snap.auto.collateral.ethMaxLltvPct = null;
+  delete snap.auto.collateral.ethMaxLltvDeltaPp;
+  const detail = chi5DetailOf(snap);
+  assert.match(detail, /broken|unavailable/);
+  assert.doesNotMatch(detail, /accruing/);
+  const c = chiOf(snap).byId['CHI-5'];
+  assert.equal(c.feedBroken, true); // flag surfaced for the UI
+  assert.equal(c.score, 0); // distinction is detail-only; a dead leg never inflates the score
+});
+
+test('A1b · ok feed but single history point (delta null) → detail says accruing', () => {
+  const snap = clone(current);
+  snap.auto.collateral.ethMaxLltvStatus = 'ok';
+  snap.auto.collateral.ethMaxLltvPct = 86;
+  snap.auto.collateral.ethMaxLltvDeltaPp = null; // only one logged reading so far
+  const detail = chi5DetailOf(snap);
+  assert.match(detail, /accruing/);
+  assert.doesNotMatch(detail, /broken|unavailable/);
+  assert.equal(chiOf(snap).byId['CHI-5'].feedBroken, false);
+});
+
+test('A1c · stale carried feed → reads "stale", neither broken nor accruing nor compressing', () => {
+  const snap = clone(current);
+  snap.auto.collateral.ethMaxLltvStatus = 'stale';
+  snap.auto.collateral.ethMaxLltvPct = 86;
+  snap.auto.collateral.ethMaxLltvDeltaPp = 4; // even a >=1pp delta must NOT confirm on stale data
+  const c = chiOf(snap).byId['CHI-5'];
+  assert.match(c.detail, /stale/);
+  assert.doesNotMatch(c.detail, /accruing|broken|confirmed/);
+  assert.equal(c.score, 0);
+});
+
 export { current, clone, readFixture, chiOf, killOf };

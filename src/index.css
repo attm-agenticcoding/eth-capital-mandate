@@ -113,6 +113,7 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: 0.2px; color:
 .meter-tick { position: absolute; top: -2px; width: 1px; height: 11px; background: #3a4656; transform: translateX(-50%); }
 .chi-value { font-family: var(--mono); font-size: 12px; color: var(--text2); }
 .chi-value.lit { color: #d6e2ee; }
+.feed-broken { font-family: var(--mono); font-size: 11px; color: var(--red); background: #1a1110; border: 1px dashed #5a2f28; border-radius: 6px; padding: 4px 8px; margin-top: 4px; }
 .chi-spark { height: 30px; display: flex; align-items: center; }
 .chi-detail { font-size: 11.5px; line-height: 1.45; color: #9aa7b6; }
 .chi-threshold > summary { cursor: pointer; font-size: 11px; color: var(--muted); list-style: none; }

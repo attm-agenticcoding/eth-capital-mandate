@@ -143,6 +143,14 @@ function chi5(auto, _manual) {
   const quartersUnder = num(auto?.vol?.quartersUnder50);
   const lltv = num(auto?.collateral?.ethMaxLltvPct);
   const lltvDelta = num(auto?.collateral?.ethMaxLltvDeltaPp);
+  // Field-level feed health for the haircut leg (A1). Set by fetch.mjs from whether the
+  // Morpho max-LTV sub-fetch succeeded: 'ok' | 'stale' (carried forward) | 'failed'.
+  // Legacy snapshots predate the field → infer from whether a value is present.
+  const lltvStatus = auto?.collateral?.ethMaxLltvStatus
+    ?? (lltv !== null ? 'ok' : 'failed');
+  const feedBroken = lltvStatus === 'failed';
+  const feedStale = lltvStatus === 'stale';
+  const feedFresh = lltvStatus === 'ok';
 
   const under50 = vol365 !== null && vol365 < 50;
   // Persistence: ≥2 consecutive quarters <50%. Accrues from history; until we have
@@ -150,22 +158,33 @@ function chi5(auto, _manual) {
   const persistent = quartersUnder !== null ? quartersUnder >= 2 : under50;
   const volLeg = under50 && persistent;
 
-  // Haircut compressing = on-chain max-LTV up ≥1pp since the first logged reading.
-  const compressing = lltvDelta !== null && lltvDelta >= 1;
+  // Haircut compressing = on-chain max-LTV up ≥1pp since the first logged reading. Only a
+  // FRESH feed can confirm it — a broken/stale feed must never read as "compressing" or
+  // (the A1 bug) as the benign "accruing" state, which is reserved for: feed OK but <2
+  // history points yet.
+  const compressing = feedFresh && lltvDelta !== null && lltvDelta >= 1;
   const legs = (volLeg ? 1 : 0) + (compressing ? 1 : 0);
   const score = legs === 2 ? 1 : legs === 1 ? 0.5 : 0;
 
   const lltvTxt = lltv !== null
-    ? ` · ETH max-LTV ${lltv.toFixed(0)}%${lltvDelta !== null ? ` (${lltvDelta >= 0 ? '+' : ''}${lltvDelta}pp)` : ''}`
-    : '';
+    ? ` · ETH max-LTV ${lltv.toFixed(0)}%${feedStale ? ' (stale)' : lltvDelta !== null ? ` (${lltvDelta >= 0 ? '+' : ''}${lltvDelta}pp)` : ''}`
+    : feedBroken ? ' · ETH max-LTV feed broken' : '';
   const valueText =
     vol365 !== null
       ? `RV365 ${vol365.toFixed(0)}% ${under50 ? '(<50% ✓)' : '(≥50%)'} · RV30 ${vol30 !== null ? vol30.toFixed(0) + '%' : '—'}${lltvTxt}`
       : 'Awaiting vol';
+  const haircutRead =
+    feedBroken ? 'feed unavailable / broken — Morpho max-LTV sub-fetch failed'
+      : feedStale ? 'stale — last good max-LTV carried forward; awaiting a fresh fetch'
+      : compressing ? 'confirmed (rising)'
+      : lltvDelta === null ? 'accruing (need a prior reading)'
+      : 'not compressing';
   return {
     score,
+    feedStatus: lltvStatus,
+    feedBroken,
     valueText,
-    detail: `Vol leg — trailing-365d realized vol <50% for ≥2 quarters: ${volLeg ? 'met' : 'not met'}. On-chain haircut leg — ETH max-LTV (Aave/Morpho) compressing the haircut: ${compressing ? 'confirmed (rising)' : lltvDelta === null ? 'accruing (need a prior reading)' : 'not compressing'}${lltv !== null ? ` · current haircut ≈ ${(100 - lltv).toFixed(0)}%` : ''}.`,
+    detail: `Vol leg — trailing-365d realized vol <50% for ≥2 quarters: ${volLeg ? 'met' : 'not met'}. On-chain haircut leg — ETH max-LTV (Aave/Morpho) compressing the haircut: ${haircutRead}${lltv !== null ? ` · current haircut ≈ ${(100 - lltv).toFixed(0)}%` : ''}.`,
   };
 }
 
@@ -189,6 +208,8 @@ export function computeCHI(snapshot) {
       valueText: r.valueText,
       detail: r.detail,
       reverse: !!r.reverse,
+      feedStatus: r.feedStatus,
+      feedBroken: !!r.feedBroken,
       source: r.source ? { label: 'manual', url: r.source } : meta.source,
     };
   });

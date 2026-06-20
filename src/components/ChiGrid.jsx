@@ -43,6 +43,7 @@ function ChiCard({ c }) {
       </div>
       <Meter score={c.score} />
       <div className={`chi-value${c.lit ? ' lit' : ''}`}>{c.valueText}</div>
+      {c.feedBroken && <div className="feed-broken" title="An upstream sub-feed failed — this is a broken feed, not data still accruing.">⚠ feed broken — not accruing</div>}
       {series && series.length >= 2 ? (
         <div className="chi-spark"><Sparkline data={series} color={SPARK_COLOR[c.key] || scoreColor(c.score)} /></div>
       ) : (
