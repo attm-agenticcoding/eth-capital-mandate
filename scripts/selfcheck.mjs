@@ -202,4 +202,48 @@ test('A5 · SOL overtakes ETH on TVL share → KC-6 hit (unchanged hit semantics
   assert.equal(killOf(snap).byId['KC-6'].status, 'hit');
 });
 
+// ====================================================================== A3
+// Deadline criteria need a progressive `elevated` warning before the cliff. Clocks are
+// derived from Date.now() so the fixtures stay valid as real time advances.
+const clockYearsAgo = (y) => new Date(Date.now() - y * 365.25 * 86400 * 1000).toISOString().slice(0, 10);
+const withClock = (iso) => {
+  const snap = clone(current); // both KC-1 auto legs are already lit in current.json
+  snap.manual.kill_criteria = { ...(snap.manual.kill_criteria || {}), thesis_clock_start: iso };
+  return snap;
+};
+
+test('A3a · clock 3.2y ago, both legs lit → KC-1 elevated (past 60% of 5y)', () => {
+  const c = killOf(withClock(clockYearsAgo(3.2))).byId['KC-1'];
+  assert.equal(c.status, 'watch');
+  assert.equal(c.elevated, true);
+  assert.equal(c.hit, false);
+  assert.match(c.detail, /elevated/i);
+});
+
+test('A3b · clock 1y ago, both legs lit → KC-1 plain watch (not elevated)', () => {
+  const c = killOf(withClock(clockYearsAgo(1))).byId['KC-1'];
+  assert.equal(c.status, 'watch');
+  assert.equal(c.elevated, false);
+});
+
+test('A3 · baseline clock (~1.5y) → KC-1 plain watch, hitCount rule unchanged', () => {
+  const k = killOf(current);
+  assert.equal(k.byId['KC-1'].status, 'watch');
+  assert.equal(k.byId['KC-1'].elevated, false);
+  assert.equal(k.hitCount, 0);
+});
+
+test('A3 · elevated never counts as a hit (exit ≥3 rule intact)', () => {
+  const snap = withClock(clockYearsAgo(4.9)); // deep into KC-1's 5y horizon but < 5y
+  // neutralise the shorter-horizon deadline legs (KC-4 3y / KC-7 2y), which DO legitimately
+  // hit once their horizons elapse, so only KC-1's elevated-watch is in play.
+  snap.manual.kill_criteria.kc4_l2_reflow = { top_l2_stage2_and_based: true };
+  snap.manual.kill_criteria.kc7_formal_verification = { material_progress: true };
+  const k = killOf(snap);
+  assert.equal(k.byId['KC-1'].elevated, true);
+  assert.equal(k.byId['KC-1'].status, 'watch');
+  assert.equal(k.byId['KC-1'].hit, false);
+  assert.equal(k.hitCount, 0); // elevated KC-1 contributes nothing to the ≥3 exit rule
+});
+
 export { current, clone, readFixture, chiOf, killOf };

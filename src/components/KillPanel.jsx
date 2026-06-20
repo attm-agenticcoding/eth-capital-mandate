@@ -11,11 +11,11 @@ const STATUS = {
 
 function KillCard({ c }) {
   return (
-    <div className={`chi-card kill-card kc-${c.status}`}>
+    <div className={`chi-card kill-card kc-${c.status}${c.elevated ? ' kc-elevated' : ''}`}>
       <div className="chi-card-head">
         <span className="chi-id">{c.id}</span>
         <span className="chi-name">{c.name}</span>
-        <span className={`kc-pill kc-${c.status}`}>{STATUS[c.status] || c.status}</span>
+        <span className={`kc-pill kc-${c.status}${c.elevated ? ' elevated' : ''}`}>{c.elevated ? 'on watch ⚠ elevated' : (STATUS[c.status] || c.status)}</span>
       </div>
       <div className="chi-value lit">{c.valueText}</div>
       <div className="chi-detail">{c.detail}</div>

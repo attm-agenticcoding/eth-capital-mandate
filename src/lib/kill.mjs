@@ -95,6 +95,13 @@ function horizonEnd(iso, yrs) {
   d.setUTCFullYear(d.getUTCFullYear() + yrs);
   return d.toISOString().slice(0, 10);
 }
+// A3: a DEADLINE criterion whose condition is fully met and whose clock has passed ≥60%
+// of its horizon is `elevated` — a progressive warning so it doesn't jump straight from
+// `watch` to `hit` at the cliff with no intermediate signal. Still `watch` (NOT a hit).
+const ELEVATED_FRACTION = 0.6;
+function deadlineElevated(yrs, horizonYrs) {
+  return yrs !== null && yrs >= ELEVATED_FRACTION * horizonYrs;
+}
 // trailing run of history rows (oldest→newest log) that satisfy pred, counted from the end
 function trailingStreak(hist, pred) {
   if (!Array.isArray(hist)) return 0;
@@ -129,15 +136,16 @@ function kc1(auto, _m, _h, clock) {
   if (!both) status = 'intact';
   else if (yrs === null || yrs < 5) status = 'watch';
   else status = 'hit';
+  const elevated = status === 'watch' && deadlineElevated(yrs, 5);
   const valueText = `L1 take-rate ${take !== null ? take + '%/yr' : '—'} · ETH/BTC corr ${corr !== null ? corr.toFixed(2) : '—'}`;
   const legTxt = `cash-flow-dead ${cashflowDead ? '✓' : '✗'} · no-premium ${noPremium ? '✓' : '✗'}`;
   const detail =
     status === 'intact'
       ? `${legTxt}. At least one leg has lifted — the thesis is becoming priceable on this axis.`
       : status === 'watch'
-        ? `${legTxt}. Both legs true, but this is EXPECTED pre-mandate — it only becomes a structural kill if still true at the ${end} horizon (5y).`
+        ? `${legTxt}. Both legs true, but this is EXPECTED pre-mandate — it only becomes a structural kill if still true at the ${end} horizon (5y).${elevated ? ` ⚠ ELEVATED: past 60% of the horizon (${yrs.toFixed(1)}y of 5y) with both legs still lit — approaching the cliff.` : ''}`
         : `${legTxt}. 5-year horizon (${end}) reached with both legs still true — cash flow and premium both failed to appear.`;
-  return { status, valueText, detail };
+  return { status, elevated, valueText, detail };
 }
 
 // KC-2 (LEVEL): ETH-aligned stablecoin share through 35%. Falls back to mainnet-only share
@@ -196,8 +204,11 @@ function kc4(auto, manual, _h, clock) {
     status = 'awaiting';
     detail = `Awaiting a user read on Stage 2 + based sequencing (window to ${end}). ${ratioTxt} as the economic proxy.`;
   }
+  const elevated = status === 'watch' && deadlineElevated(yrs, 3);
+  if (elevated) detail += ` ⚠ ELEVATED: past 60% of the 3y horizon (${yrs.toFixed(1)}y) still unmet.`;
   return {
     status,
+    elevated,
     valueText: `Stage 2 + based seq: ${milestone === true ? 'yes' : milestone === false ? 'not yet' : 'awaiting'} · ${ratioTxt}`,
     detail,
   };
@@ -286,7 +297,9 @@ function kc7(_a, manual, _h, clock) {
     status = 'awaiting';
     detail = `Awaiting a user read (window to ${end}). No keyless feed — user-fed milestone.`;
   }
-  return { status, valueText: `Formal verification: ${prog === true ? 'progressing' : prog === false ? 'no progress' : 'awaiting'}`, detail };
+  const elevated = status === 'watch' && deadlineElevated(yrs, 2);
+  if (elevated) detail += ` ⚠ ELEVATED: past 60% of the 2y horizon (${yrs.toFixed(1)}y) still unmet.`;
+  return { status, elevated, valueText: `Formal verification: ${prog === true ? 'progressing' : prog === false ? 'no progress' : 'awaiting'}`, detail };
 }
 
 const SCORERS = { kc1, kc2, kc3, kc4, kc5, kc6, kc7 };
@@ -300,7 +313,7 @@ export function computeKill(snapshot, hist = []) {
 
   const criteria = KILL_CRITERIA.map((meta) => {
     const r = SCORERS[meta.key](auto, manual, hist, clock);
-    return { ...meta, status: r.status, hit: r.status === 'hit', valueText: r.valueText, detail: r.detail };
+    return { ...meta, status: r.status, hit: r.status === 'hit', elevated: !!r.elevated, valueText: r.valueText, detail: r.detail };
   });
 
   const hitCount = criteria.filter((c) => c.status === 'hit').length;

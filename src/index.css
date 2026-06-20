@@ -229,9 +229,11 @@ table.codif td { padding: 5px 6px; border-bottom: 1px solid #131b26; color: var(
 .kc-pill.kc-watch { color: var(--amber); border-color: #4a3f23; background: #1a160f; }
 .kc-pill.kc-intact { color: var(--green); border-color: #234a3a; background: #0f1a16; }
 .kc-pill.kc-awaiting { color: var(--text2); border-color: var(--border2); background: #0f1722; }
+.kc-pill.kc-watch.elevated { color: #f0a85a; border-color: #6e4a1f; background: #1e160c; box-shadow: 0 0 0 1px #6e4a1f33; }
 .kill-card { border-left-width: 3px; }
 .kill-card.kc-hit { border-left-color: var(--red); }
 .kill-card.kc-watch { border-left-color: var(--amber); }
+.kill-card.kc-elevated { border-left-color: #f0a85a; }
 .kill-card.kc-intact { border-left-color: var(--green); }
 .kill-card.kc-awaiting { border-left-color: var(--border2); }
 @media (max-width: 520px) { .kill-summary { flex-direction: column; align-items: flex-start; gap: 12px; } }
