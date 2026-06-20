@@ -45,14 +45,16 @@ const killOf = (snap, hist = []) => {
 };
 
 // ====================================================================== BASELINE
-// Known-good values at review time (see CLAUDE_CODE_TASKS.md "Known current state").
-test('baseline · CHI total is 1.0 on the frozen snapshot', () => {
-  assert.equal(chiOf(current).total, 1.0);
+// Known-good values. CHI-1 0.5→0.25 and total 1.0→0.75 as of A2: the frozen snapshot is
+// in a live ≥50% drawdown with collateral share down 7.6pp (>5pp), so CHI-1's stress-live
+// soft-fail (0.25) replaces the neutral seed. CHI-3 0.5, CHI-5 0 unchanged.
+test('baseline · CHI total is 0.75 on the frozen snapshot (A2 stress-live soft-fail)', () => {
+  assert.equal(chiOf(current).total, 0.75);
 });
 
-test('baseline · CHI component sub-scores (seed CHI-1 0.5, CHI-3 0.5, CHI-5 0)', () => {
+test('baseline · CHI component sub-scores (CHI-1 0.25 live soft-fail, CHI-3 0.5, CHI-5 0)', () => {
   const { byId } = chiOf(current);
-  assert.equal(byId['CHI-1'].score, 0.5);
+  assert.equal(byId['CHI-1'].score, 0.25);
   assert.equal(byId['CHI-3'].score, 0.5);
   assert.equal(byId['CHI-5'].score, 0);
 });
@@ -116,6 +118,52 @@ test('A1c · stale carried feed → reads "stale", neither broken nor accruing n
   assert.match(c.detail, /stale/);
   assert.doesNotMatch(c.detail, /accruing|broken|confirmed/);
   assert.equal(c.score, 0);
+});
+
+// ====================================================================== A2
+// CHI-1 must reflect the LIVE stress test, not hold the neutral seed mid-drawdown.
+test('A2 · live ≥50% drawdown + share Δ ≤−5pp + manual unset → CHI-1 0.25 soft-fail', () => {
+  const snap = clone(current);
+  snap.auto.eth.drawdownFromPeakPct = 64.8;
+  snap.auto.collateral.combinedEthShareDeltaPp = -6.2;
+  snap.manual.chi1_stress = { episode_through_50dd: false, share_delta_pp: null, no_delist_or_ltv_cut: null };
+  const c = chiOf(snap).byId['CHI-1'];
+  assert.equal(c.score, 0.25);
+  assert.ok(c.score < 0.5, 'invariant: live soft-fail strictly below the neutral seed');
+  assert.equal(c.lit, false, 'a 0.25 soft-fail is not "lit"');
+  assert.equal(c.stressActive, true);
+  assert.match(c.detail, /stress test active/i);
+  assert.match(c.detail, /pending no-delist/i);
+});
+
+test('A2 · live ≥50% drawdown but share holding (Δ > −5pp) → CHI-1 holds 0.5 under stress', () => {
+  const snap = clone(current);
+  snap.auto.eth.drawdownFromPeakPct = 60;
+  snap.auto.collateral.combinedEthShareDeltaPp = -2;
+  snap.manual.chi1_stress = { episode_through_50dd: false };
+  const c = chiOf(snap).byId['CHI-1'];
+  assert.equal(c.score, 0.5);
+  assert.equal(c.stressActive, true);
+  assert.match(c.detail, /holding under stress/i);
+});
+
+test('A2 · a RESOLVED episode overrides the live branch (operator-owned verdict wins)', () => {
+  const snap = clone(current); // dd 62.7, Δ −7.6 → would be a live soft-fail
+  snap.manual.chi1_stress = { episode_through_50dd: true, share_delta_pp: -3, no_delist_or_ltv_cut: true };
+  const c = chiOf(snap).byId['CHI-1'];
+  assert.equal(c.score, 1, 'resolved-survived overrides the live soft-fail');
+  assert.equal(c.stressActive, false);
+});
+
+test('A2 · no live stress (dd < 50, manual unset) → CHI-1 holds the neutral seed 0.5', () => {
+  const snap = clone(current);
+  snap.auto.eth.drawdownFromPeakPct = 20;
+  snap.auto.collateral.combinedEthShareDeltaPp = -8; // big drift but NOT in a ≥50% drawdown
+  snap.manual.chi1_stress = { episode_through_50dd: false };
+  const c = chiOf(snap).byId['CHI-1'];
+  assert.equal(c.score, 0.5);
+  assert.equal(c.stressActive, false);
+  assert.match(c.detail, /seed 0\.5/i);
 });
 
 export { current, clone, readFixture, chiOf, killOf };

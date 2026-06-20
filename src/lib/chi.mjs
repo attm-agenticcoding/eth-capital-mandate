@@ -79,11 +79,18 @@ const num = (x) => (typeof x === 'number' && isFinite(x) ? x : null);
 function chi1(auto, manual) {
   const share = num(auto?.collateral?.combinedEthSharePct);
   const dd = num(auto?.eth?.drawdownFromPeakPct); // positive magnitude, e.g. 34 => -34%
+  const delta = num(auto?.collateral?.combinedEthShareDeltaPp);
   const m = manual?.chi1_stress || {};
+  const resolved = m.episode_through_50dd === true;
+
   let score = 0.5;
+  let stressActive = false;
   let detail =
     'Seed 0.5 — eligibility held through the 2022 drawdown, but stablecoin/T-bill collateral was not yet at scale. The real test is the next ≥50% drawdown.';
-  if (m.episode_through_50dd === true) {
+
+  if (resolved) {
+    // The operator recorded a COMPLETED ≥50% drawdown episode → the resolved verdict
+    // takes over and overrides the live branch (→ 1 survived / 0 failed).
     const deltaOk = num(m.share_delta_pp) !== null && Math.abs(m.share_delta_pp) <= 5;
     const noDelist = m.no_delist_or_ltv_cut === true;
     if (deltaOk && noDelist) {
@@ -93,17 +100,27 @@ function chi1(auto, manual) {
       score = 0;
       detail = `Failed the stress test: share Δ ${m.share_delta_pp ?? '?'}pp and/or a delist/LTV cut occurred during a ≥50% drawdown.`;
     }
+  } else if (dd !== null && dd >= 50) {
+    // STRESS-LIVE (A2): the ≥50% drawdown the seed treats as a *future* test is happening
+    // NOW, and the auto net-collateral leg already carries a real signal. Score from it
+    // instead of holding the neutral seed — a live soft-fail must read BELOW 0.5.
+    stressActive = true;
+    if (delta !== null && delta <= -5) {
+      score = 0.25; // soft fail — strictly below the neutral seed, never reads as neutral
+      detail = `⚠ Stress test ACTIVE — amid the current −${dd.toFixed(0)}% drawdown the ETH-system NET collateral share has fallen ${Math.abs(delta)}pp (>5pp), a soft fail of the ≤5pp light condition. Pending no-delist / LTV-cut confirmation (manual leg unset).`;
+    } else {
+      score = 0.5; // holding under stress — the auto leg is within tolerance
+      const driftPhrase = delta !== null ? `is ${delta >= 0 ? '+' : ''}${delta}pp (within ≤5pp)` : 'drift is still accruing (cannot confirm ≤5pp yet)';
+      detail = `Holding under stress — amid the current −${dd.toFixed(0)}% drawdown the ETH-system NET collateral share ${driftPhrase}. The no-delist / LTV-cut leg is still pending (manual, unset).`;
+    }
   }
-  const delta = num(auto?.collateral?.combinedEthShareDeltaPp);
+
   const driftTxt = delta !== null ? ` · share ${delta >= 0 ? '+' : ''}${delta}pp over tracked window` : '';
   const valueText =
     share !== null
       ? `ETH-system NET collateral ${share.toFixed(1)}%${driftTxt} · drawdown from peak ${dd !== null ? '−' + dd.toFixed(0) + '%' : 'n/a'}`
       : 'Awaiting collateral data';
-  if (score === 0.5 && delta !== null && delta <= -5 && dd !== null && dd >= 50) {
-    detail += ` ⚠ Caution: amid the current −${dd.toFixed(0)}% drawdown, the ETH-system NET collateral share has fallen ${Math.abs(delta)}pp (>5pp) — a soft fail of the light condition, pending the manual delist/LTV check.`;
-  }
-  return { score, valueText, detail };
+  return { score, stressActive, valueText, detail };
 }
 
 // CHI-3: AUTO. ETH used as a slashable security bond — proxied by ETH restaked
@@ -210,11 +227,15 @@ export function computeCHI(snapshot) {
       reverse: !!r.reverse,
       feedStatus: r.feedStatus,
       feedBroken: !!r.feedBroken,
+      stressActive: !!r.stressActive,
       source: r.source ? { label: 'manual', url: r.source } : meta.source,
     };
   });
 
-  const total = Math.round(components.reduce((a, c) => a + c.score, 0) * 2) / 2;
+  // Round to 0.01, NOT 0.5: CHI-1's stress-live soft-fail (0.25) makes quarter-step totals
+  // possible (e.g. 0.25+0.5+0 = 0.75). Rounding to 0.5 would round 0.75 back up to 1.0 and
+  // hide the soft-fail in the headline.
+  const total = Math.round(components.reduce((a, c) => a + c.score, 0) * 100) / 100;
   const litCount = components.filter((c) => c.lit).length;
   const probabilities = mapProbabilities(total, reverseLit);
 

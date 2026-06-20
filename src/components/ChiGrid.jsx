@@ -1,4 +1,5 @@
 import { chi, auto, hist, manual, generatedUtc } from '../lib/data.js';
+import { fmtScore } from '../lib/format.js';
 import { Stamp } from './Stamp.jsx';
 import { Sparkline } from './charts.jsx';
 import { PanelHead } from './ui.jsx';
@@ -43,6 +44,7 @@ function ChiCard({ c }) {
       </div>
       <Meter score={c.score} />
       <div className={`chi-value${c.lit ? ' lit' : ''}`}>{c.valueText}</div>
+      {c.stressActive && <div className="stress-live" title="A ≥50% ETH drawdown is in progress and the auto collateral leg already carries a signal — this is a live soft-fail below the neutral seed, not a future hypothetical.">⚠ stress test ACTIVE — live soft-fail, no-delist check pending</div>}
       {c.feedBroken && <div className="feed-broken" title="An upstream sub-feed failed — this is a broken feed, not data still accruing.">⚠ feed broken — not accruing</div>}
       {series && series.length >= 2 ? (
         <div className="chi-spark"><Sparkline data={series} color={SPARK_COLOR[c.key] || scoreColor(c.score)} /></div>
@@ -68,7 +70,7 @@ function ProbMap() {
   return (
     <div className="probmap">
       <div className="probmap-title">
-        CHI → probability mapping <span className="muted">· live: CHI {t.toFixed(1)} → <b>{rows.find((r) => r.k === active).status}</b></span>
+        CHI → probability mapping <span className="muted">· live: CHI {fmtScore(t)} → <b>{rows.find((r) => r.k === active).status}</b></span>
       </div>
       <table>
         <thead><tr><th>Band</th><th>Mandate branch</th><th>P($10k)</th><th>P($20k)</th><th>Status</th></tr></thead>
