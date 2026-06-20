@@ -21,6 +21,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { computeCHI } from '../src/lib/chi.mjs';
 import { ETH_ALIGNED_CHAINS } from '../src/lib/kill.mjs';
+import { drawdownPctFromAth } from '../src/lib/market.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -188,8 +189,13 @@ async function getMarket() {
   const volSeries = [];
   for (let i = 30; i < ethR.length; i++) volSeries.push({ t: ethTs[i + 1] || ethTs[i], v: r2(annVol(ethR.slice(i - 30, i)), 1) });
 
-  const peak = Math.max(...ethPx);
-  const drawdownFromPeakPct = peak > 0 ? (1 - eth.current_price / peak) * 100 : null;
+  // CHI-1-facing drawdown uses the TRUE all-time high (A4). The rolling 365d-window max is
+  // kept as a separate display field, but it must NOT feed CHI-1: once the real ATH slides
+  // out of the window, the windowed drawdown shrinks abruptly at a flat price and would
+  // falsely relieve CHI-1's ≥50% trigger. ATH is from CoinGecko, never hardcoded.
+  const roll365High = Math.max(...ethPx);
+  const drawdownFrom365dHighPct = roll365High > 0 ? (1 - eth.current_price / roll365High) * 100 : null;
+  const drawdownFromPeakPct = drawdownPctFromAth(eth.current_price, eth.ath);
   const ratioNow = btc.current_price > 0 ? eth.current_price / btc.current_price : null;
   const ratioSeries = [];
   for (let i = 0; i < n; i++) ratioSeries.push({ t: ethTs[i], v: r2(ethPx[i] / btcPx[i], 6) });
@@ -202,7 +208,8 @@ async function getMarket() {
       ath: eth.ath,
       athChangePct: r2(eth.ath_change_percentage, 1),
       circulating: eth.circulating_supply,
-      drawdownFromPeakPct: r2(drawdownFromPeakPct, 1),
+      drawdownFromPeakPct: r2(drawdownFromPeakPct, 1), // true-ATH — feeds CHI-1
+      drawdownFrom365dHighPct: r2(drawdownFrom365dHighPct, 1), // rolling-window — display only
       priceSeries: downsample(ethChart.prices.map((p) => ({ t: p[0], v: r2(p[1], 2) })), 140),
     },
     btc: { price: r2(btc.current_price, 2), mcap: btc.market_cap },

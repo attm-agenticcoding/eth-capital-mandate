@@ -20,6 +20,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { computeCHI } from '../src/lib/chi.mjs';
 import { computeKill } from '../src/lib/kill.mjs';
+import { drawdownPctFromAth } from '../src/lib/market.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -244,6 +245,26 @@ test('A3 · elevated never counts as a hit (exit ≥3 rule intact)', () => {
   assert.equal(k.byId['KC-1'].status, 'watch');
   assert.equal(k.byId['KC-1'].hit, false);
   assert.equal(k.hitCount, 0); // elevated KC-1 contributes nothing to the ≥3 exit rule
+});
+
+// ====================================================================== A4
+// The CHI-1-facing drawdown is computed from the true ATH, not a rolling window max.
+const r1 = (x) => Math.round(x * 10) / 10;
+test('A4 · drawdown from true ATH matches the acceptance values', () => {
+  assert.equal(r1(drawdownPctFromAth(1702.05, 4946.05)), 65.6); // review-time snapshot
+  assert.equal(r1(drawdownPctFromAth(1800.62, 4946.05)), 63.6); // frozen-fixture price
+});
+
+test('A4 · drawdown is independent of any rolling window (ATH never hardcoded)', () => {
+  // A flat price with the ATH outside a hypothetical window still reads the true drawdown.
+  assert.equal(drawdownPctFromAth(4946.05, 4946.05), 0);
+  assert.equal(r1(drawdownPctFromAth(2473.025, 4946.05)), 50.0);
+});
+
+test('A4 · bad inputs → null (never fabricate)', () => {
+  assert.equal(drawdownPctFromAth(1700, 0), null);
+  assert.equal(drawdownPctFromAth(null, 4946), null);
+  assert.equal(drawdownPctFromAth(1700, undefined), null);
 });
 
 export { current, clone, readFixture, chiOf, killOf };
