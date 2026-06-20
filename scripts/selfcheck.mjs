@@ -166,4 +166,40 @@ test('A2 · no live stress (dd < 50, manual unset) → CHI-1 holds the neutral s
   assert.match(c.detail, /seed 0\.5/i);
 });
 
+// ====================================================================== A5
+// KC-6 must escalate to watch on the LEADING volume signal, not only the lagging TVL one.
+test('A5 · TVL favors ETH but SOL DEX-volume share crosses ETH → KC-6 watch', () => {
+  const snap = clone(current);
+  snap.auto.chains.ethSharePct = 52.8;   // TVL share still ETH ≫ SOL
+  snap.auto.chains.solanaSharePct = 6.6;
+  snap.auto.chains.ethDexVolSharePct = 16.9; // …but volume share has flipped
+  snap.auto.chains.solDexVolSharePct = 23.2;
+  const c = killOf(snap).byId['KC-6'];
+  assert.equal(c.status, 'watch');
+  assert.equal(c.hit, false); // watch is NOT a hit — hitCount semantics unchanged
+  assert.match(c.detail, /volume/i);
+});
+
+test('A5 · TVL favors ETH and volume still favors ETH → KC-6 intact', () => {
+  const snap = clone(current);
+  snap.auto.chains.ethSharePct = 52.8;
+  snap.auto.chains.solanaSharePct = 6.6;
+  snap.auto.chains.ethDexVolSharePct = 30;
+  snap.auto.chains.solDexVolSharePct = 18;
+  assert.equal(killOf(snap).byId['KC-6'].status, 'intact');
+});
+
+test('A5 · missing volume fields (feed down) → KC-6 falls back to TVL, no crash', () => {
+  const snap = clone(current); // current.json predates the dex fields
+  assert.equal(snap.auto.chains.ethDexVolSharePct, undefined);
+  assert.equal(killOf(snap).byId['KC-6'].status, 'intact');
+});
+
+test('A5 · SOL overtakes ETH on TVL share → KC-6 hit (unchanged hit semantics)', () => {
+  const snap = clone(current);
+  snap.auto.chains.ethSharePct = 20;
+  snap.auto.chains.solanaSharePct = 25;
+  assert.equal(killOf(snap).byId['KC-6'].status, 'hit');
+});
+
 export { current, clone, readFixture, chiOf, killOf };

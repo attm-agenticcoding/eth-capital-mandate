@@ -394,13 +394,50 @@ async function getStablecoins() {
   };
 }
 
+// A5: DEX-volume share by chain (DefiLlama /overview/dexs, keyless). Solana's strength
+// shows in THROUGHPUT/volume before it shows in locked TVL, so volume share is the leading
+// "losing the market" signal that the stock (TVL) metric reads years late. Best-effort and
+// isolated: a dead dexs endpoint degrades to null, it must not sink the chain-TVL read.
+async function getDexVolumeShares() {
+  const overview = (slug) =>
+    fetchJson(`https://api.llama.fi/overview/dexs${slug ? '/' + slug : ''}?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true`, { timeout: 30000 });
+  const all = await overview('');
+  const total30d = Number(all?.total30d);
+  if (!isFinite(total30d) || total30d <= 0) throw new Error('dexs: no all-chain 30d total');
+  const chainVol = async (slug) => {
+    try { const c = await overview(slug); const v = Number(c?.total30d); return isFinite(v) && v > 0 ? v : null; }
+    catch (e) { console.warn(`! dex vol ${slug}: ${e.message}`); return null; }
+  };
+  const eth30d = await chainVol('ethereum');
+  const sol30d = await chainVol('solana');
+  return {
+    dexVolTotal30dUsd: Math.round(total30d),
+    ethDexVol30dUsd: eth30d !== null ? Math.round(eth30d) : null,
+    solDexVol30dUsd: sol30d !== null ? Math.round(sol30d) : null,
+    ethDexVolSharePct: eth30d !== null ? r2((eth30d / total30d) * 100, 1) : null,
+    solDexVolSharePct: sol30d !== null ? r2((sol30d / total30d) * 100, 1) : null,
+    dexVolWindow: '30d',
+  };
+}
+
 async function getChains() {
   const arr = await fetchJson('https://api.llama.fi/v2/chains', { timeout: 30000 });
   const pick = (n) => arr.find((c) => c.name === n)?.tvl || null;
   const eth = pick('Ethereum');
   const sol = pick('Solana');
   const total = arr.reduce((a, c) => a + (c.tvl || 0), 0);
-  return { ethTvl: eth ? Math.round(eth) : null, solanaTvl: sol ? Math.round(sol) : null, totalTvl: Math.round(total), ethSharePct: eth ? r2((eth / total) * 100, 1) : null, solanaSharePct: sol ? r2((sol / total) * 100, 1) : null };
+  // DEX-volume leg (best-effort): null shares on failure, never throws out of getChains.
+  let dex = { ethDexVolSharePct: null, solDexVolSharePct: null, dexVolWindow: '30d' };
+  try { dex = { ...dex, ...(await getDexVolumeShares()) }; }
+  catch (e) { console.warn(`! dex volume failed: ${e.message}`); }
+  return {
+    ethTvl: eth ? Math.round(eth) : null,
+    solanaTvl: sol ? Math.round(sol) : null,
+    totalTvl: Math.round(total),
+    ethSharePct: eth ? r2((eth / total) * 100, 1) : null,
+    solanaSharePct: sol ? r2((sol / total) * 100, 1) : null,
+    ...dex,
+  };
 }
 
 async function getRwa() {
@@ -687,6 +724,8 @@ async function run() {
     stablecoinEthAlignedSharePct: auto.stablecoins?.ethAlignedSharePct ?? null,
     ethChainSharePct: auto.chains?.ethSharePct ?? null,
     solChainSharePct: auto.chains?.solanaSharePct ?? null,
+    ethDexVolSharePct: auto.chains?.ethDexVolSharePct ?? null,
+    solDexVolSharePct: auto.chains?.solDexVolSharePct ?? null,
     netIssuancePctPerYr:
       typeof auto.supply?.net30dEth === 'number' && auto.supply?.totalSupplyEth > 0
         ? r2((auto.supply.net30dEth / 30) * 365 / auto.supply.totalSupplyEth * 100, 2)

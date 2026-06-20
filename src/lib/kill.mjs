@@ -245,15 +245,24 @@ function kc6(auto, _m, hist) {
   const solGain = deltaSinceOldest(hist, 'solChainSharePct');
   const ethGain = deltaSinceOldest(hist, 'ethChainSharePct');
   const race = solGain !== null && ethGain !== null ? r1(solGain - ethGain) : null; // >0 = SOL gaining on ETH
+  // A5: DEX-volume share is the LEADING leg — Solana's strength surfaces in throughput
+  // before locked TVL, so a TVL-only KC-6 reads the overtake years late. When SOL's DEX
+  // volume share crosses ETH's, escalate to watch even while TVL share still favors ETH.
+  const ethVol = num(auto?.chains?.ethDexVolSharePct);
+  const solVol = num(auto?.chains?.solDexVolSharePct);
+  const volLeadSol = ethVol !== null && solVol !== null && solVol > ethVol;
   let status;
-  if (solShare !== null && ethShare !== null && solShare > ethShare) status = 'hit';
-  else if (race !== null && race >= 5) status = 'watch';
+  if (solShare !== null && ethShare !== null && solShare > ethShare) status = 'hit'; // TVL overtaken
+  else if (volLeadSol || (race !== null && race >= 5)) status = 'watch';
   else status = 'intact';
   const raceTxt = race !== null ? ` · share race ${race >= 0 ? '+' : ''}${race}pp to SOL` : ' · growth race accruing';
+  const volTxt = ethVol !== null && solVol !== null
+    ? ` · DEX vol ETH ${ethVol}% vs SOL ${solVol}%${volLeadSol ? ' ⚠ SOL leads' : ''}`
+    : '';
   return {
     status,
-    valueText: `ETH ${ratio !== null ? ratio.toFixed(1) + '×' : '—'} Solana TVL${raceTxt}`,
-    detail: `Competitor benchmark. Kill = Solana overtakes ETH on all-chain TVL share (now ETH ${ethShare ?? '—'}% vs SOL ${solShare ?? '—'}%); watch = SOL gaining ≥5pp faster across metrics. Growth race accrues from our log.`,
+    valueText: `ETH ${ratio !== null ? ratio.toFixed(1) + '×' : '—'} Solana TVL${raceTxt}${volTxt}`,
+    detail: `Competitor benchmark. Kill = Solana overtakes ETH on all-chain TVL share (now ETH ${ethShare ?? '—'}% vs SOL ${solShare ?? '—'}%). Watch = SOL's leading DEX-volume share crosses ETH${ethVol !== null && solVol !== null ? ` (now ETH ${ethVol}% vs SOL ${solVol}%${volLeadSol ? ' — SOL already leads on volume' : ''})` : ''}, or SOL gaining ≥5pp faster on TVL share. Volume leads TVL; the growth race accrues from our log.`,
   };
 }
 
