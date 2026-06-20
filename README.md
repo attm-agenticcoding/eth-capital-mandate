@@ -42,9 +42,9 @@ The scored index is **3 auto components**, each **0 / 0.5 / 1** (max 3). 🟢 = 
 
 | # | Component | Mode | Lights (= 1) when |
 |---|-----------|------|-------------------|
-| **CHI-1** | Stress survival | 🟢+✍️ | Through any **≥50% ETH drawdown**, the ETH-system **net** collateral share across Aave/Morpho/Sky falls **≤5pp** AND no top venue delists ETH or cuts max LTV >10pp. **Seeded at 0.5** (the real test is the *next* ≥50% drawdown). Auto-tracks the **net** ETH collateral share — Sky's USDC PSM, pure lenders and same-class loops (wstETH→ETH, sUSDe carries) excluded — plus drawdown; you confirm the no-delist leg only during a crash. |
+| **CHI-1** | Stress survival | 🟢+✍️ | Through any **≥50% ETH drawdown**, the ETH-system **net** collateral share across Aave/Morpho/Sky falls **≤5pp** AND no top venue delists ETH or cuts max LTV >10pp. **Seeded at 0.5** (the real test is the *next* ≥50% drawdown), but if a ≥50% drawdown is **live** and the net collateral share is already down >5pp, CHI-1 drops to a **0.25 stress-live soft-fail** (below the seed) until the manual no-delist leg resolves. Drawdown is measured from the **true ATH**. Auto-tracks the **net** ETH collateral share — Sky's USDC PSM, pure lenders and same-class loops (wstETH→ETH, sUSDe carries) excluded — plus drawdown; you confirm the no-delist leg only during a crash. |
 | **CHI-3** | Slashable ETH bond demand | 🟢 | **ETH restaked** across EigenLayer / Symbiotic / Karak, **ETH-denominated** (price-stripped). Lights at **≥5M ETH**; **≥1M** = partial. **Reverse (Schelling-retired):** collapses **<1M ETH** → if CHI ≤ 0.5, thesis flagged **RETIRED**. *Headline TVL over-reads — treat as upper bound.* |
-| **CHI-5** | Volatility / haircut regime | 🟢 | ETH trailing-365d realized vol **<50% for ≥2 consecutive quarters** **AND** ETH's **on-chain max-LTV tier rising** (= haircut compressing) across Aave/Morpho. On-chain LTV is literally a haircut (LTV 86% = 14% haircut), measured against uncorrelated debt (ETH↔ETH loops excluded); the trend accrues from our own log. |
+| **CHI-5** | Volatility / haircut regime | 🟢 | ETH trailing-365d realized vol **<50% for ≥2 consecutive quarters** **AND** ETH's **on-chain max-LTV tier rising** (= haircut compressing) across Aave/Morpho. On-chain LTV is literally a haircut (LTV 86% = 14% haircut), measured against uncorrelated debt (ETH↔ETH loops excluded); the trend accrues from our own log. The haircut leg carries **field-level feed health** (`ethMaxLltvStatus` ok/stale/failed) so a **broken** Morpho feed reads distinctly from genuinely **accruing** data. |
 
 Half credit (**0.5**) is awarded for meaningful-but-incomplete progress (e.g. CHI-3 ≥1M but <5M ETH; CHI-5 with one of the two legs met).
 
@@ -83,7 +83,7 @@ Two kinds, which decide what counts as a *hit*:
 | **KC-3** | 机构结算层旁落 | level | ETH-system RWA share **<50%** (majority defect); new-issuance flow read accrues | DefiLlama |
 | **KC-4** | L2 价值回流停滞 | deadline 3y | no top L2 at **Stage 2 + based sequencing** by the 3y horizon (manual leg; L2→L1 reflow as econ context) | L2BEAT + manual |
 | **KC-5** | 货币政策失信 | level | NET issuance **>2–3%/yr sustained**, or governance raises the curve (manual). **Mild inflation does NOT count** — it pays for the slashable bond | ultrasound.money |
-| **KC-6** | 被 Solana 全面超车 | level | Solana **overtakes** ETH on all-chain TVL share; growth race accrues | DefiLlama |
+| **KC-6** | 被 Solana 全面超车 | level | Solana **overtakes** ETH on all-chain TVL share (hit). **Leading leg:** SOL's **DEX-volume share** crossing ETH's → watch, even while TVL still favors ETH (volume leads TVL) | DefiLlama (TVL + DEX volume) |
 | **KC-7** | 技术护城河落空 | deadline 2y | no material AI-assisted formal-verification progress by the 2y horizon (manual) | manual watch |
 
 Auto criteria (KC-1/2/3/6 and KC-5's level) recompute live from the snapshot; **KC-4, KC-7 and KC-5's governance leg
@@ -137,6 +137,22 @@ up. **Leave anything you can't source as unset/false.**
 A field left unset renders **"Awaiting"** in the UI. CHI-4's watch lights at ≥2 live venues (haircut ≤40%) but
 **never moves the scored index**. Always attach a `source` URL; never invent values.
 
+### Experiments (propose-only, off by default)
+
+Three semantic changes are implemented behind opt-in flags that default to **absent → off**, so the scored
+index reads exactly as today until you flip one. See **`docs/proposals.md`** for the full write-ups and the
+effect on current data. Add to `manual.json` to enable:
+
+```jsonc
+{
+  "experiments": {
+    "exit_rule": "count",              // B1: "count" (default) | "weighted" | "single_hit_override"
+    "kc2_kc3_strict_alignment": false, // B2: score KC-2/KC-3 against the STRICT ETH-aligned set
+    "demote_chi5": false               // B3: drop CHI-5 from the scored index (→ unscored watch, max 2)
+  }
+}
+```
+
 ---
 
 ## Local development
@@ -158,7 +174,7 @@ fresh snapshot and deployed. To enable: push to GitHub, ensure **Settings → Pa
 
 ## Data sources (all keyless)
 
-CoinGecko (price / vol / correlation) · DefiLlama (Aave/Sky collateral, stablecoins, chains, RWA, restaking) · Morpho Blue API (per-market net collateral + ETH on-chain max-LTV) ·
+CoinGecko (price / vol / correlation / ATH) · DefiLlama (Aave/Sky collateral, stablecoins, chains, RWA, restaking, DEX volume) · Morpho Blue API (per-market net collateral + ETH on-chain max-LTV) ·
 ultrasound.money (supply, staking, issuance/burn) · growthepie.xyz (L1+blob fees, L2→L1 economics) · L2BEAT (L2 TVL).
 
 ---
