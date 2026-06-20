@@ -384,4 +384,32 @@ test('B1 · enabling a flag with 0 hits still does not trigger (no false exit)',
   assert.equal(killOf(snap).triggered, false);
 });
 
+// ====================================================================== B2
+// Strict-alignment scoring is off by default; the flag reroutes the scored basis.
+test('B2 · default → KC-2 broad / KC-3 mainnet (baseline status unchanged)', () => {
+  const snap = clone(current);
+  snap.auto.stablecoins.ethAlignedSharePct = 42;       // broad → intact (>40)
+  snap.auto.stablecoins.ethAlignedSharePctStrict = 38; // strict would be watch (<40)
+  assert.equal(killOf(snap).byId['KC-2'].status, 'intact'); // default uses broad
+});
+
+test('B2 · flag on → KC-2 scores the strict share (status can change)', () => {
+  const snap = clone(current);
+  snap.auto.stablecoins.ethAlignedSharePct = 42;
+  snap.auto.stablecoins.ethAlignedSharePctStrict = 38;
+  snap.manual.experiments = { kc2_kc3_strict_alignment: true };
+  const c = killOf(snap).byId['KC-2'];
+  assert.equal(c.status, 'watch'); // 38 < 40
+  assert.match(c.valueText, /STRICT/);
+});
+
+test('B2 · flag on → KC-3 scores the strict-aligned RWA share, not mainnet stock', () => {
+  const snap = clone(current);
+  snap.auto.rwa.ethSharePct = 52;              // mainnet → intact
+  snap.auto.rwa.ethAlignedSharePctStrict = 48; // strict-aligned → hit (<50)
+  assert.equal(killOf(snap).byId['KC-3'].status, 'intact'); // default
+  snap.manual.experiments = { kc2_kc3_strict_alignment: true };
+  assert.equal(killOf(snap).byId['KC-3'].status, 'hit'); // flag reroutes basis
+});
+
 export { current, clone, readFixture, chiOf, killOf };

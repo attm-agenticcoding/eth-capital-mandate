@@ -176,24 +176,31 @@ function kc1(auto, _m, _h, clock) {
 
 // KC-2 (LEVEL): ETH-aligned stablecoin share through 35%. Falls back to mainnet-only share
 // until fetch.mjs supplies the ETH-stack aggregate (then this auto-upgrades).
-function kc2(auto) {
-  const aligned = num(auto?.stablecoins?.ethAlignedSharePct);
+function kc2(auto, manual) {
+  // B2 (proposal, off by default): score the STRICT aligned share instead of the broad one.
+  const useStrict = manual?.experiments?.kc2_kc3_strict_alignment === true;
+  const broad = num(auto?.stablecoins?.ethAlignedSharePct);
+  const strict = num(auto?.stablecoins?.ethAlignedSharePctStrict);
   const mainnet = num(auto?.stablecoins?.ethSharePct);
-  const share = aligned ?? mainnet;
+  const share = useStrict ? (strict ?? broad ?? mainnet) : (broad ?? mainnet);
   if (share === null) return { status: 'awaiting', valueText: 'Awaiting stablecoin data', detail: 'Needs DefiLlama stablecoin-by-chain.' };
   const status = share < 35 ? 'hit' : share < 40 ? 'watch' : 'intact';
-  const unit = aligned != null ? 'ETH-stack' : 'ETH mainnet (stack aggregate pending next fetch)';
+  const unit = useStrict && strict != null ? 'ETH-stack STRICT' : broad != null ? 'ETH-stack' : 'ETH mainnet (stack aggregate pending next fetch)';
   return {
     status,
     valueText: `${unit} stablecoin share ${share.toFixed(1)}%`,
-    detail: `Payment-layer dominance. Kill <35% (from ~50%); watch <40%. Currently ${share.toFixed(1)}% → ${status === 'intact' ? 'well clear of the floor' : status === 'watch' ? 'approaching the floor' : 'below the floor'}.`,
+    detail: `Payment-layer dominance. Kill <35% (from ~50%); watch <40%. Currently ${share.toFixed(1)}% on the ${useStrict ? 'STRICT' : 'broad'} aligned set → ${status === 'intact' ? 'well clear of the floor' : status === 'watch' ? 'approaching the floor' : 'below the floor'}.`,
   };
 }
 
 // KC-3 (LEVEL + accruing flow): RWA Ethereum-system share < 50% (majority no longer choose ETH).
 // Stock proxy now; the truer NEW-issuance flow share accrues from our log.
-function kc3(auto, _m, hist) {
-  const share = num(auto?.rwa?.ethSharePct);
+function kc3(auto, manual, hist) {
+  // B2 (proposal, off by default): score the STRICT aligned RWA share instead of mainnet stock.
+  const useStrict = manual?.experiments?.kc2_kc3_strict_alignment === true;
+  const mainnet = num(auto?.rwa?.ethSharePct);
+  const strictAligned = num(auto?.rwa?.ethAlignedSharePctStrict);
+  const share = useStrict ? (strictAligned ?? mainnet) : mainnet;
   if (share === null) return { status: 'awaiting', valueText: 'Awaiting RWA data', detail: 'Needs DefiLlama RWA-by-chain.' };
   const flow = deltaSinceOldest(hist, 'rwaEthSharePct'); // pp change in ETH's OWN stock share
   // A7: the LEADING read — ETH's share of NEW RWA value added (Δ ETH RWA ÷ Δ total RWA) over
