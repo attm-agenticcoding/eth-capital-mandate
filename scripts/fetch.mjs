@@ -20,8 +20,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { computeCHI } from '../src/lib/chi.mjs';
-import { ETH_ALIGNED_CHAINS } from '../src/lib/kill.mjs';
-import { drawdownPctFromAth } from '../src/lib/market.mjs';
+import { ETH_ALIGNED_CHAINS, ETH_ALIGNED_CHAINS_STRICT } from '../src/lib/kill.mjs';
+import { drawdownPctFromAth, alignmentGapPp } from '../src/lib/market.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -388,15 +388,25 @@ async function getStablecoins() {
   const eth = rows.find((r) => r.name === 'Ethereum');
   // KC-2: Ethereum-aligned = mainnet + ETH-settled rollups (the payment-layer unit the kill
   // criterion actually names), aggregated over the FULL chain list, not just the top-8 shown.
+  // A6: compute BROAD (current list) and STRICT (ETH-settled + ETH-DA only) aggregates so the
+  // headline's sensitivity to the alignment definition is visible. ethAlignedSharePct stays
+  // the BROAD value — what KC-2 scores — so scoring is UNCHANGED (the strict switch is B2).
   const alignedSet = new Set(ETH_ALIGNED_CHAINS);
+  const strictSet = new Set(ETH_ALIGNED_CHAINS_STRICT);
   const ethAlignedUsd = rows.filter((r) => alignedSet.has(r.name)).reduce((a, r) => a + r.usd, 0);
+  const ethStrictUsd = rows.filter((r) => strictSet.has(r.name)).reduce((a, r) => a + r.usd, 0);
+  const broadPct = r2((ethAlignedUsd / total) * 100, 1);
+  const strictPct = r2((ethStrictUsd / total) * 100, 1);
   const top = rows.sort((a, b) => b.usd - a.usd).slice(0, 8).map((r) => ({ name: r.name, usd: Math.round(r.usd), sharePct: r2((r.usd / total) * 100, 1) }));
   return {
     totalUsd: Math.round(total),
     ethUsd: Math.round(eth?.usd || 0),
     ethSharePct: r2(((eth?.usd || 0) / total) * 100, 1),
     ethAlignedUsd: Math.round(ethAlignedUsd),
-    ethAlignedSharePct: r2((ethAlignedUsd / total) * 100, 1),
+    ethAlignedSharePct: broadPct, // = broad; KC-2 scores this (unchanged)
+    ethAlignedSharePctBroad: broadPct,
+    ethAlignedSharePctStrict: strictPct,
+    ethAlignedBroadMinusStrictPp: alignmentGapPp(broadPct, strictPct),
     byChain: top,
   };
 }
@@ -460,7 +470,21 @@ async function getRwa() {
     }
   }
   const top = Object.entries(byChain).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, usd]) => ({ name, usd: Math.round(usd), sharePct: r2((usd / total) * 100, 1) }));
-  return { totalUsd: Math.round(total), ethSharePct: byChain.Ethereum ? r2((byChain.Ethereum / total) * 100, 1) : null, byChain: top };
+  // A6: broad/strict Ethereum-aligned RWA aggregates (display + divergence). KC-3 still
+  // scores the mainnet-only ethSharePct below — scoring set unchanged (strict switch = B2).
+  const alignedSet = new Set(ETH_ALIGNED_CHAINS);
+  const strictSet = new Set(ETH_ALIGNED_CHAINS_STRICT);
+  const sumWhere = (set) => Object.entries(byChain).filter(([n]) => set.has(n)).reduce((a, [, v]) => a + v, 0);
+  const broadPct = total > 0 ? r2((sumWhere(alignedSet) / total) * 100, 1) : null;
+  const strictPct = total > 0 ? r2((sumWhere(strictSet) / total) * 100, 1) : null;
+  return {
+    totalUsd: Math.round(total),
+    ethSharePct: byChain.Ethereum ? r2((byChain.Ethereum / total) * 100, 1) : null, // mainnet — KC-3 scores this
+    ethAlignedSharePctBroad: broadPct,
+    ethAlignedSharePctStrict: strictPct,
+    ethAlignedBroadMinusStrictPp: alignmentGapPp(broadPct, strictPct),
+    byChain: top,
+  };
 }
 
 async function getSupply() {
@@ -729,6 +753,9 @@ async function run() {
     // kill-criteria series (KC-2/3/5/6) — logged so the flow/persistence legs accrue
     rwaEthSharePct: auto.rwa?.ethSharePct ?? null,
     stablecoinEthAlignedSharePct: auto.stablecoins?.ethAlignedSharePct ?? null,
+    stablecoinEthAlignedStrictSharePct: auto.stablecoins?.ethAlignedSharePctStrict ?? null,
+    stablecoinAlignedGapPp: auto.stablecoins?.ethAlignedBroadMinusStrictPp ?? null,
+    rwaAlignedGapPp: auto.rwa?.ethAlignedBroadMinusStrictPp ?? null,
     ethChainSharePct: auto.chains?.ethSharePct ?? null,
     solChainSharePct: auto.chains?.solanaSharePct ?? null,
     ethDexVolSharePct: auto.chains?.ethDexVolSharePct ?? null,

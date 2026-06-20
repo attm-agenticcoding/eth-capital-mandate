@@ -20,7 +20,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { computeCHI } from '../src/lib/chi.mjs';
 import { computeKill } from '../src/lib/kill.mjs';
-import { drawdownPctFromAth } from '../src/lib/market.mjs';
+import { drawdownPctFromAth, alignmentGapPp, alignmentDivergenceTrend } from '../src/lib/market.mjs';
+import { ETH_ALIGNED_CHAINS, ETH_ALIGNED_CHAINS_STRICT } from '../src/lib/kill.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -265,6 +266,43 @@ test('A4 · bad inputs → null (never fabricate)', () => {
   assert.equal(drawdownPctFromAth(1700, 0), null);
   assert.equal(drawdownPctFromAth(null, 4946), null);
   assert.equal(drawdownPctFromAth(1700, undefined), null);
+});
+
+// ====================================================================== A6
+// Strict + broad alignment shares are both exposed; KC-2/KC-3 SCORING is unchanged.
+test('A6 · strict alignment set is a proper subset of broad (Polygon PoS etc. dropped)', () => {
+  const broad = new Set(ETH_ALIGNED_CHAINS);
+  assert.ok(ETH_ALIGNED_CHAINS_STRICT.every((c) => broad.has(c)));
+  assert.ok(ETH_ALIGNED_CHAINS_STRICT.length < ETH_ALIGNED_CHAINS.length);
+  for (const dropped of ['Polygon', 'Mantle', 'Manta', 'Metis', 'Fraxtal']) {
+    assert.ok(!ETH_ALIGNED_CHAINS_STRICT.includes(dropped), `${dropped} excluded from strict`);
+  }
+});
+
+test('A6 · alignmentGapPp = broad − strict, strict ≤ broad always', () => {
+  assert.equal(alignmentGapPp(55.2, 49.0), 6.2);
+  assert.equal(alignmentGapPp(50, 50), 0);
+  assert.equal(alignmentGapPp(null, 49), null);
+});
+
+test('A6 · divergence trend flags a WIDENING gap from the log', () => {
+  const histRows = [{ stablecoinAlignedGapPp: 4.0 }, { stablecoinAlignedGapPp: 5.0 }];
+  const t = alignmentDivergenceTrend(7.5, histRows, 'stablecoinAlignedGapPp');
+  assert.equal(t.gap, 7.5);
+  assert.equal(t.widenedPp, 3.5); // 7.5 − oldest 4.0
+  // no history yet → no false widening signal
+  assert.equal(alignmentDivergenceTrend(7.5, [], 'stablecoinAlignedGapPp').widenedPp, null);
+});
+
+test('A6 · adding strict/broad fields does NOT change KC-2/KC-3 scored status', () => {
+  const snap = clone(current);
+  snap.auto.stablecoins.ethAlignedSharePctBroad = 55.2;
+  snap.auto.stablecoins.ethAlignedSharePctStrict = 41.0; // far lower, but KC-2 must not move
+  snap.auto.stablecoins.ethAlignedBroadMinusStrictPp = 14.2;
+  snap.auto.rwa.ethAlignedSharePctStrict = 40;
+  const { byId } = killOf(snap);
+  assert.equal(byId['KC-2'].status, 'intact'); // still scores ethAlignedSharePct (broad) / mainnet
+  assert.equal(byId['KC-3'].status, 'intact'); // still scores mainnet ethSharePct
 });
 
 export { current, clone, readFixture, chiOf, killOf };

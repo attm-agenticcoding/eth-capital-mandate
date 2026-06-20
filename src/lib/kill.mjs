@@ -35,6 +35,15 @@ export const ETH_ALIGNED_CHAINS = [
   'Manta', 'Metis', 'Fraxtal', 'Ink', 'Soneium', 'Unichain', 'World Chain', 'Abstract',
 ];
 
+// A6: the STRICT Ethereum-aligned set = mainnet + only rollups that genuinely settle to AND
+// post data-availability on Ethereum. Excludes the weakest-alignment chains in the broad
+// list: Polygon PoS (sidechain / commit-chain, not a rollup) and external-/alt-DA chains
+// that do NOT post DA to Ethereum by default — Mantle (EigenDA), Manta (Celestia),
+// Metis (off-chain DAC), Fraxtal (own DA layer). Display + divergence ONLY — which set
+// KC-2/KC-3 actually SCORE against is a semantic choice deferred to B2.
+const STRICT_ALIGNMENT_EXCLUDE = new Set(['Polygon', 'Mantle', 'Manta', 'Metis', 'Fraxtal']);
+export const ETH_ALIGNED_CHAINS_STRICT = ETH_ALIGNED_CHAINS.filter((c) => !STRICT_ALIGNMENT_EXCLUDE.has(c));
+
 export const KILL_CRITERIA = [
   {
     id: 'KC-1', key: 'kc1', name: 'Cash flow + monetary premium 双双落空', kind: 'deadline', horizonYrs: 5, mode: 'auto',
