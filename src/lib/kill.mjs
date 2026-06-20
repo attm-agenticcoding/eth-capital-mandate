@@ -24,6 +24,11 @@
 //          awaiting (no data / manual leg unset). Only `hit` counts toward the ≥3 rule.
 
 export const EXIT_THRESHOLD = 3; // ≥3 hits → consider exit
+// B1 (proposal, off by default): per-criterion weights for the `weighted` exit rule. KC-1 is
+// the thesis's core proposition (cash flow + premium both fail); KC-3 the settlement layer.
+export const KC_EXIT_WEIGHTS = { 'KC-1': 2, 'KC-3': 1.5 }; // others default to 1
+// KCs whose single hit raises an independent red alert under `single_hit_override`.
+export const KC_DECISIVE = ['KC-1', 'KC-3'];
 export const THESIS_CLOCK_DEFAULT = '2025-01-01'; // anchor for DEADLINE criteria; overridable via manual.json
 
 // Chains treated as "Ethereum-aligned" for KC-2's payment-layer share (mainnet + ETH-settled
@@ -346,7 +351,24 @@ export function computeKill(snapshot, hist = []) {
   const hitCount = criteria.filter((c) => c.status === 'hit').length;
   const watchCount = criteria.filter((c) => c.status === 'watch').length;
   const awaitingCount = criteria.filter((c) => c.status === 'awaiting').length;
-  const triggered = hitCount >= EXIT_THRESHOLD;
+  const countTriggered = hitCount >= EXIT_THRESHOLD;
 
-  return { criteria, hitCount, watchCount, awaitingCount, triggered, exitThreshold: EXIT_THRESHOLD, clock };
+  // B1 (proposal, off by default): alternative exit rules. With the flag absent the result is
+  // byte-identical to the count rule; the weighted score / red-alert breakdown is always
+  // computed and exposed so the operator can compare reads without flipping anything.
+  const exitRule = manual?.experiments?.exit_rule || 'count';
+  const weightedHitScore = r1(
+    criteria.filter((c) => c.hit).reduce((a, c) => a + (KC_EXIT_WEIGHTS[c.id] ?? 1), 0),
+  );
+  const redAlertCriteria = criteria.filter((c) => c.hit && KC_DECISIVE.includes(c.id)).map((c) => c.id);
+  const redAlert = redAlertCriteria.length > 0;
+  let triggered = countTriggered;
+  if (exitRule === 'weighted') triggered = weightedHitScore >= EXIT_THRESHOLD;
+  else if (exitRule === 'single_hit_override') triggered = countTriggered || redAlert;
+
+  return {
+    criteria, hitCount, watchCount, awaitingCount, triggered,
+    exitThreshold: EXIT_THRESHOLD, clock,
+    experiment: { exitRule, exitBasis: exitRule, countTriggered, weightedHitScore, redAlert, redAlertCriteria },
+  };
 }

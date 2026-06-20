@@ -337,4 +337,51 @@ test('A7 · KC-3 detail shows a computed flow % once the log has ≥2 RWA-value 
   assert.equal(c.status, 'intact'); // flow read is leading/labeled, does NOT change the hit trigger
 });
 
+// ====================================================================== B1
+// Exit-rule experiment is off by default; alt rules only change output when opted in.
+// Force KC-1 + KC-3 hits: take<0.5 & corr>0.85 past the 5y horizon (KC-1), RWA<50 (KC-3).
+const twoCoreHits = () => {
+  const snap = clone(current);
+  // clock >5y ago → KC-1 hits; neutralise KC-4/KC-7 (whose horizons would also elapse) so
+  // exactly KC-1 + KC-3 are hit and the count sits at 2/3 (the case that separates the rules).
+  snap.manual.kill_criteria = {
+    thesis_clock_start: '2018-01-01',
+    kc4_l2_reflow: { top_l2_stage2_and_based: true },
+    kc7_formal_verification: { material_progress: true },
+  };
+  snap.auto.rwa.ethSharePct = 40; // <50 → KC-3 hits
+  return snap;
+};
+
+test('B1 · default (no flag) → count rule, identical triggering', () => {
+  const k = killOf(current);
+  assert.equal(k.experiment.exitRule, 'count');
+  assert.equal(k.triggered, false); // 0 hits today
+  assert.equal(k.experiment.weightedHitScore, 0);
+  assert.equal(k.experiment.redAlert, false);
+});
+
+test('B1 · two core hits (KC-1+KC-3): count says NO exit, weighted & override say YES', () => {
+  const base = twoCoreHits();
+  assert.equal(killOf(base).byId['KC-1'].hit, true);
+  assert.equal(killOf(base).byId['KC-3'].hit, true);
+
+  const dflt = killOf(base); // count rule
+  assert.equal(dflt.hitCount, 2);
+  assert.equal(dflt.triggered, false); // 2 < 3
+  assert.equal(dflt.experiment.weightedHitScore, 3.5); // 2.0 + 1.5
+  assert.equal(dflt.experiment.redAlert, true);
+
+  const weighted = clone(base); weighted.manual.experiments = { exit_rule: 'weighted' };
+  assert.equal(killOf(weighted).triggered, true); // 3.5 ≥ 3
+
+  const override = clone(base); override.manual.experiments = { exit_rule: 'single_hit_override' };
+  assert.equal(killOf(override).triggered, true); // KC-1 hit → red alert
+});
+
+test('B1 · enabling a flag with 0 hits still does not trigger (no false exit)', () => {
+  const snap = clone(current); snap.manual.experiments = { exit_rule: 'weighted' };
+  assert.equal(killOf(snap).triggered, false);
+});
+
 export { current, clone, readFixture, chiOf, killOf };

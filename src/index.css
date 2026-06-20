@@ -229,6 +229,7 @@ table.codif td { padding: 5px 6px; border-bottom: 1px solid #131b26; color: var(
 .kill-legend { display: grid; gap: 8px; }
 .kill-pills { display: flex; gap: 7px; flex-wrap: wrap; }
 .kill-rule { font-size: 11.5px; color: #8693a2; line-height: 1.45; margin: 0; }
+.kill-rule.exp { font-family: var(--mono); font-size: 11px; color: #9b7ad6; margin-top: 6px; }
 .kill-summary.fired .kill-rule { color: #f0b6ab; }
 .kc-pill { font: 700 11px/1 var(--mono); padding: 4px 8px; border-radius: 12px; border: 1px solid; letter-spacing: 0.3px; white-space: nowrap; }
 .kc-pill.kc-hit { color: var(--red); border-color: #4a2620; background: #1c100d; }

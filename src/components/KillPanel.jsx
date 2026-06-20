@@ -46,6 +46,12 @@ function ExitBar() {
             ? '⚠ Exit rule TRIGGERED — ≥3 structural kill criteria are hit. Seriously consider exit.'
             : `Exit rule: ≥${exitThreshold} sustained hits over a 3–5yr window → seriously consider exit. These are structural falsifiers, not a price stop.`}
         </p>
+        {kill.experiment && kill.experiment.exitRule !== 'count' && (
+          <p className="kill-rule exp">
+            🧪 experiment <b>{kill.experiment.exitRule}</b> active · weighted hit-score {kill.experiment.weightedHitScore}/≥{exitThreshold}
+            {kill.experiment.redAlert ? ` · ⚠ red alert: ${kill.experiment.redAlertCriteria.join(', ')} hit` : ' · no decisive-criterion hit'}
+          </p>
+        )}
       </div>
     </div>
   );
