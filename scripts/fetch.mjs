@@ -20,7 +20,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { computeCHI } from '../src/lib/chi.mjs';
-import { ETH_ALIGNED_CHAINS } from '../src/lib/kill.mjs';
+import { ETH_ALIGNED_CHAINS, ETH_ALIGNED_CHAINS_STRICT } from '../src/lib/kill.mjs';
+import { drawdownPctFromAth, alignmentGapPp } from '../src/lib/market.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -188,8 +189,13 @@ async function getMarket() {
   const volSeries = [];
   for (let i = 30; i < ethR.length; i++) volSeries.push({ t: ethTs[i + 1] || ethTs[i], v: r2(annVol(ethR.slice(i - 30, i)), 1) });
 
-  const peak = Math.max(...ethPx);
-  const drawdownFromPeakPct = peak > 0 ? (1 - eth.current_price / peak) * 100 : null;
+  // CHI-1-facing drawdown uses the TRUE all-time high (A4). The rolling 365d-window max is
+  // kept as a separate display field, but it must NOT feed CHI-1: once the real ATH slides
+  // out of the window, the windowed drawdown shrinks abruptly at a flat price and would
+  // falsely relieve CHI-1's ≥50% trigger. ATH is from CoinGecko, never hardcoded.
+  const roll365High = Math.max(...ethPx);
+  const drawdownFrom365dHighPct = roll365High > 0 ? (1 - eth.current_price / roll365High) * 100 : null;
+  const drawdownFromPeakPct = drawdownPctFromAth(eth.current_price, eth.ath);
   const ratioNow = btc.current_price > 0 ? eth.current_price / btc.current_price : null;
   const ratioSeries = [];
   for (let i = 0; i < n; i++) ratioSeries.push({ t: ethTs[i], v: r2(ethPx[i] / btcPx[i], 6) });
@@ -202,7 +208,8 @@ async function getMarket() {
       ath: eth.ath,
       athChangePct: r2(eth.ath_change_percentage, 1),
       circulating: eth.circulating_supply,
-      drawdownFromPeakPct: r2(drawdownFromPeakPct, 1),
+      drawdownFromPeakPct: r2(drawdownFromPeakPct, 1), // true-ATH — feeds CHI-1
+      drawdownFrom365dHighPct: r2(drawdownFrom365dHighPct, 1), // rolling-window — display only
       priceSeries: downsample(ethChart.prices.map((p) => ({ t: p[0], v: r2(p[1], 2) })), 140),
     },
     btc: { price: r2(btc.current_price, 2), mcap: btc.market_cap },
@@ -287,6 +294,21 @@ async function getCollateral() {
   try { const mr = await withRetry(() => morphoNetCollateral(), 2, 1500); morpho = mr.buckets; morphoEthMaxLltvPct = mr.ethMaxLltvPct; }
   catch (e) { console.warn(`! morpho collateral failed: ${e.message}`); }
 
+  // A1: field-level health for the CHI-5 haircut leg, DISTINCT from the coarse per-source
+  // record(). 'ok' = measured this run; 'stale' = sub-fetch unavailable but a prior good
+  // value is carried forward; 'failed' = unavailable with no prior value. This lets chi5
+  // say "feed broken" instead of the misleading "accruing" when the Morpho leg is dead.
+  let ethMaxLltvPct, ethMaxLltvStatus;
+  if (morpho && typeof morphoEthMaxLltvPct === 'number') {
+    ethMaxLltvPct = morphoEthMaxLltvPct;
+    ethMaxLltvStatus = 'ok';
+  } else {
+    const carried = typeof prev?.auto?.collateral?.ethMaxLltvPct === 'number' ? prev.auto.collateral.ethMaxLltvPct : null;
+    ethMaxLltvPct = carried;
+    ethMaxLltvStatus = carried !== null ? 'stale' : 'failed';
+    console.warn(`! ETH max-LTV unavailable → status=${ethMaxLltvStatus}${carried !== null ? ` (carried ${carried}%)` : ''}`);
+  }
+
   const skyColl = (b) => ({ ...b, stable: 0 }); // Sky: drop PSM/savings, keep vault collateral
 
   // current snapshot
@@ -329,7 +351,8 @@ async function getCollateral() {
     combinedEthShareDeltaPp,
     driftWindowMonths: drift.length,
     combinedTotalUsd: Math.round(ctot),
-    ethMaxLltvPct: morphoEthMaxLltvPct, // CHI-5: ETH's top on-chain LTV tier (= 1 − haircut), Morpho-measured
+    ethMaxLltvPct, // CHI-5: ETH's top on-chain LTV tier (= 1 − haircut), Morpho-measured
+    ethMaxLltvStatus, // A1: 'ok' | 'stale' | 'failed' — field-level health of the haircut leg
     venuesUsed: perVenue.map((v) => v.name),
     morphoOk: !!morpho,
     method: 'NET collateral (rule B): Aave DL-net + Morpho per-market net + Sky vault-only (USDC PSM/savings excluded). Morpho held flat across the 18m drift (no per-market history).',
@@ -365,16 +388,52 @@ async function getStablecoins() {
   const eth = rows.find((r) => r.name === 'Ethereum');
   // KC-2: Ethereum-aligned = mainnet + ETH-settled rollups (the payment-layer unit the kill
   // criterion actually names), aggregated over the FULL chain list, not just the top-8 shown.
+  // A6: compute BROAD (current list) and STRICT (ETH-settled + ETH-DA only) aggregates so the
+  // headline's sensitivity to the alignment definition is visible. ethAlignedSharePct stays
+  // the BROAD value — what KC-2 scores — so scoring is UNCHANGED (the strict switch is B2).
   const alignedSet = new Set(ETH_ALIGNED_CHAINS);
+  const strictSet = new Set(ETH_ALIGNED_CHAINS_STRICT);
   const ethAlignedUsd = rows.filter((r) => alignedSet.has(r.name)).reduce((a, r) => a + r.usd, 0);
+  const ethStrictUsd = rows.filter((r) => strictSet.has(r.name)).reduce((a, r) => a + r.usd, 0);
+  const broadPct = r2((ethAlignedUsd / total) * 100, 1);
+  const strictPct = r2((ethStrictUsd / total) * 100, 1);
   const top = rows.sort((a, b) => b.usd - a.usd).slice(0, 8).map((r) => ({ name: r.name, usd: Math.round(r.usd), sharePct: r2((r.usd / total) * 100, 1) }));
   return {
     totalUsd: Math.round(total),
     ethUsd: Math.round(eth?.usd || 0),
     ethSharePct: r2(((eth?.usd || 0) / total) * 100, 1),
     ethAlignedUsd: Math.round(ethAlignedUsd),
-    ethAlignedSharePct: r2((ethAlignedUsd / total) * 100, 1),
+    ethAlignedSharePct: broadPct, // = broad; KC-2 scores this (unchanged)
+    ethAlignedSharePctBroad: broadPct,
+    ethAlignedSharePctStrict: strictPct,
+    ethAlignedBroadMinusStrictPp: alignmentGapPp(broadPct, strictPct),
     byChain: top,
+  };
+}
+
+// A5: DEX-volume share by chain (DefiLlama /overview/dexs, keyless). Solana's strength
+// shows in THROUGHPUT/volume before it shows in locked TVL, so volume share is the leading
+// "losing the market" signal that the stock (TVL) metric reads years late. Best-effort and
+// isolated: a dead dexs endpoint degrades to null, it must not sink the chain-TVL read.
+async function getDexVolumeShares() {
+  const overview = (slug) =>
+    fetchJson(`https://api.llama.fi/overview/dexs${slug ? '/' + slug : ''}?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true`, { timeout: 30000 });
+  const all = await overview('');
+  const total30d = Number(all?.total30d);
+  if (!isFinite(total30d) || total30d <= 0) throw new Error('dexs: no all-chain 30d total');
+  const chainVol = async (slug) => {
+    try { const c = await overview(slug); const v = Number(c?.total30d); return isFinite(v) && v > 0 ? v : null; }
+    catch (e) { console.warn(`! dex vol ${slug}: ${e.message}`); return null; }
+  };
+  const eth30d = await chainVol('ethereum');
+  const sol30d = await chainVol('solana');
+  return {
+    dexVolTotal30dUsd: Math.round(total30d),
+    ethDexVol30dUsd: eth30d !== null ? Math.round(eth30d) : null,
+    solDexVol30dUsd: sol30d !== null ? Math.round(sol30d) : null,
+    ethDexVolSharePct: eth30d !== null ? r2((eth30d / total30d) * 100, 1) : null,
+    solDexVolSharePct: sol30d !== null ? r2((sol30d / total30d) * 100, 1) : null,
+    dexVolWindow: '30d',
   };
 }
 
@@ -384,7 +443,18 @@ async function getChains() {
   const eth = pick('Ethereum');
   const sol = pick('Solana');
   const total = arr.reduce((a, c) => a + (c.tvl || 0), 0);
-  return { ethTvl: eth ? Math.round(eth) : null, solanaTvl: sol ? Math.round(sol) : null, totalTvl: Math.round(total), ethSharePct: eth ? r2((eth / total) * 100, 1) : null, solanaSharePct: sol ? r2((sol / total) * 100, 1) : null };
+  // DEX-volume leg (best-effort): null shares on failure, never throws out of getChains.
+  let dex = { ethDexVolSharePct: null, solDexVolSharePct: null, dexVolWindow: '30d' };
+  try { dex = { ...dex, ...(await getDexVolumeShares()) }; }
+  catch (e) { console.warn(`! dex volume failed: ${e.message}`); }
+  return {
+    ethTvl: eth ? Math.round(eth) : null,
+    solanaTvl: sol ? Math.round(sol) : null,
+    totalTvl: Math.round(total),
+    ethSharePct: eth ? r2((eth / total) * 100, 1) : null,
+    solanaSharePct: sol ? r2((sol / total) * 100, 1) : null,
+    ...dex,
+  };
 }
 
 async function getRwa() {
@@ -400,7 +470,22 @@ async function getRwa() {
     }
   }
   const top = Object.entries(byChain).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, usd]) => ({ name, usd: Math.round(usd), sharePct: r2((usd / total) * 100, 1) }));
-  return { totalUsd: Math.round(total), ethSharePct: byChain.Ethereum ? r2((byChain.Ethereum / total) * 100, 1) : null, byChain: top };
+  // A6: broad/strict Ethereum-aligned RWA aggregates (display + divergence). KC-3 still
+  // scores the mainnet-only ethSharePct below — scoring set unchanged (strict switch = B2).
+  const alignedSet = new Set(ETH_ALIGNED_CHAINS);
+  const strictSet = new Set(ETH_ALIGNED_CHAINS_STRICT);
+  const sumWhere = (set) => Object.entries(byChain).filter(([n]) => set.has(n)).reduce((a, [, v]) => a + v, 0);
+  const broadPct = total > 0 ? r2((sumWhere(alignedSet) / total) * 100, 1) : null;
+  const strictPct = total > 0 ? r2((sumWhere(strictSet) / total) * 100, 1) : null;
+  return {
+    totalUsd: Math.round(total),
+    ethUsd: byChain.Ethereum ? Math.round(byChain.Ethereum) : null, // A7: absolute mainnet RWA value (for new-issuance flow)
+    ethSharePct: byChain.Ethereum ? r2((byChain.Ethereum / total) * 100, 1) : null, // mainnet — KC-3 scores this
+    ethAlignedSharePctBroad: broadPct,
+    ethAlignedSharePctStrict: strictPct,
+    ethAlignedBroadMinusStrictPp: alignmentGapPp(broadPct, strictPct),
+    byChain: top,
+  };
 }
 
 async function getSupply() {
@@ -605,7 +690,7 @@ async function run() {
   // CHI-5 haircut leg: trend of ETH's on-chain max LTV (compressing haircut = rising LTV).
   // Computed here (needs the longitudinal log) against the oldest logged reading; chi.mjs
   // stays pure and just reads the precomputed delta. Null until ≥1 prior reading exists.
-  if (collateral && typeof collateral.ethMaxLltvPct === 'number') {
+  if (collateral && collateral.ethMaxLltvStatus === 'ok' && typeof collateral.ethMaxLltvPct === 'number') {
     let histRows = [];
     try {
       histRows = fs.readFileSync(F_NDJSON, 'utf8').trim().split('\n').filter(Boolean)
@@ -668,9 +753,16 @@ async function run() {
     ethMaxLltvPct: auto.collateral?.ethMaxLltvPct ?? null,
     // kill-criteria series (KC-2/3/5/6) — logged so the flow/persistence legs accrue
     rwaEthSharePct: auto.rwa?.ethSharePct ?? null,
+    rwaEthValueUsd: auto.rwa?.ethUsd ?? null, // A7: absolute ETH RWA value — new-issuance flow accrues from these
+    rwaTotalUsd: auto.rwa?.totalUsd ?? null,
     stablecoinEthAlignedSharePct: auto.stablecoins?.ethAlignedSharePct ?? null,
+    stablecoinEthAlignedStrictSharePct: auto.stablecoins?.ethAlignedSharePctStrict ?? null,
+    stablecoinAlignedGapPp: auto.stablecoins?.ethAlignedBroadMinusStrictPp ?? null,
+    rwaAlignedGapPp: auto.rwa?.ethAlignedBroadMinusStrictPp ?? null,
     ethChainSharePct: auto.chains?.ethSharePct ?? null,
     solChainSharePct: auto.chains?.solanaSharePct ?? null,
+    ethDexVolSharePct: auto.chains?.ethDexVolSharePct ?? null,
+    solDexVolSharePct: auto.chains?.solDexVolSharePct ?? null,
     netIssuancePctPerYr:
       typeof auto.supply?.net30dEth === 'number' && auto.supply?.totalSupplyEth > 0
         ? r2((auto.supply.net30dEth / 30) * 365 / auto.supply.totalSupplyEth * 100, 2)

@@ -1,5 +1,5 @@
 import { chi, auto, prior } from '../lib/data.js';
-import { fmtUsd } from '../lib/format.js';
+import { fmtUsd, fmtScore } from '../lib/format.js';
 
 function Prob({ label, v }) {
   return (
@@ -26,7 +26,7 @@ export function VerdictBanner() {
     <section className={`verdict tone-${p.tone}`}>
       <div className="verdict-left">
         <div className="chi-score">
-          <div className="chi-num">{chi.total.toFixed(1)}<span className="chi-den">/{chi.components.length}</span></div>
+          <div className="chi-num">{fmtScore(chi.total)}<span className="chi-den">/{chi.components.length}</span></div>
           <div className="chi-lit">{chi.litCount} of {chi.components.length} components lit&nbsp;(≥0.5)</div>
         </div>
         <div className="verdict-status">

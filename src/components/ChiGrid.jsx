@@ -1,4 +1,5 @@
 import { chi, auto, hist, manual, generatedUtc } from '../lib/data.js';
+import { fmtScore } from '../lib/format.js';
 import { Stamp } from './Stamp.jsx';
 import { Sparkline } from './charts.jsx';
 import { PanelHead } from './ui.jsx';
@@ -43,6 +44,8 @@ function ChiCard({ c }) {
       </div>
       <Meter score={c.score} />
       <div className={`chi-value${c.lit ? ' lit' : ''}`}>{c.valueText}</div>
+      {c.stressActive && <div className="stress-live" title="A ≥50% ETH drawdown is in progress and the auto collateral leg already carries a signal — this is a live soft-fail below the neutral seed, not a future hypothetical.">⚠ stress test ACTIVE — live soft-fail, no-delist check pending</div>}
+      {c.feedBroken && <div className="feed-broken" title="An upstream sub-feed failed — this is a broken feed, not data still accruing.">⚠ feed broken — not accruing</div>}
       {series && series.length >= 2 ? (
         <div className="chi-spark"><Sparkline data={series} color={SPARK_COLOR[c.key] || scoreColor(c.score)} /></div>
       ) : (
@@ -67,7 +70,7 @@ function ProbMap() {
   return (
     <div className="probmap">
       <div className="probmap-title">
-        CHI → probability mapping <span className="muted">· live: CHI {t.toFixed(1)} → <b>{rows.find((r) => r.k === active).status}</b></span>
+        CHI → probability mapping <span className="muted">· live: CHI {fmtScore(t)} → <b>{rows.find((r) => r.k === active).status}</b></span>
       </div>
       <table>
         <thead><tr><th>Band</th><th>Mandate branch</th><th>P($10k)</th><th>P($20k)</th><th>Status</th></tr></thead>
@@ -90,6 +93,22 @@ export function ChiGrid() {
       <div className="chi-grid">
         {chi.components.map((c) => <ChiCard key={c.id} c={c} />)}
       </div>
+      {chi.unscored?.length > 0 && (
+        <div className="chi-unscored">
+          <div className="chi-unscored-h muted">Demoted to unscored watch (experiment) — does not move the index:</div>
+          {chi.unscored.map((c) => (
+            <div key={c.id} className="chi-card unscored">
+              <div className="chi-card-head">
+                <span className="chi-id">{c.id}</span>
+                <span className="chi-name">{c.name}</span>
+                <span className="chi-score-badge muted" style={{ borderColor: '#3a4453' }}>unscored</span>
+              </div>
+              <div className="chi-value">{c.valueText}</div>
+              <div className="chi-detail">{c.detail}</div>
+            </div>
+          ))}
+        </div>
+      )}
       <p className="chi-note muted">
         Numbering keeps the original IDs. <b>CHI-2</b> (demand-side enforcement) and <b>CHI-6</b> (duration) were
         retired — CHI-2's signal is already in CHI-1's net ETH-vs-stable collateral drift, and a fixed-term ETH-credit

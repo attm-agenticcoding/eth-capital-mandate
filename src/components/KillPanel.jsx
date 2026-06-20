@@ -11,11 +11,11 @@ const STATUS = {
 
 function KillCard({ c }) {
   return (
-    <div className={`chi-card kill-card kc-${c.status}`}>
+    <div className={`chi-card kill-card kc-${c.status}${c.elevated ? ' kc-elevated' : ''}`}>
       <div className="chi-card-head">
         <span className="chi-id">{c.id}</span>
         <span className="chi-name">{c.name}</span>
-        <span className={`kc-pill kc-${c.status}`}>{STATUS[c.status] || c.status}</span>
+        <span className={`kc-pill kc-${c.status}${c.elevated ? ' elevated' : ''}`}>{c.elevated ? 'on watch ⚠ elevated' : (STATUS[c.status] || c.status)}</span>
       </div>
       <div className="chi-value lit">{c.valueText}</div>
       <div className="chi-detail">{c.detail}</div>
@@ -46,6 +46,12 @@ function ExitBar() {
             ? '⚠ Exit rule TRIGGERED — ≥3 structural kill criteria are hit. Seriously consider exit.'
             : `Exit rule: ≥${exitThreshold} sustained hits over a 3–5yr window → seriously consider exit. These are structural falsifiers, not a price stop.`}
         </p>
+        {kill.experiment && kill.experiment.exitRule !== 'count' && (
+          <p className="kill-rule exp">
+            🧪 experiment <b>{kill.experiment.exitRule}</b> active · weighted hit-score {kill.experiment.weightedHitScore}/≥{exitThreshold}
+            {kill.experiment.redAlert ? ` · ⚠ red alert: ${kill.experiment.redAlertCriteria.join(', ')} hit` : ' · no decisive-criterion hit'}
+          </p>
+        )}
       </div>
     </div>
   );

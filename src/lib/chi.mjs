@@ -33,12 +33,15 @@ export const STATED_PRIOR = {
 // CHI total -> probability band. Evaluated top-down. Thresholds rescaled to the 3-component
 // (max 3) index; the probability priors themselves are unchanged. On track ≥2.5 (83%),
 // Hardening ≥1.5 (50%), Schelling-retired ≤0.5 + CHI-3 reverse lit.
-export function mapProbabilities(total, reverseLit) {
-  if (total >= 2.5)
+export function mapProbabilities(total, reverseLit, maxTotal = 3) {
+  // Thresholds are expressed against a max-3 index; scale them to the active denominator so
+  // B3's CHI-5 demotion (max 2) keeps coherent bands. maxTotal=3 → identical to before.
+  const f = maxTotal / 3;
+  if (total >= 2.5 * f)
     return { branchPct: 53, p10k: 45, p20k: 22, status: 'On track', tone: 'good' };
-  if (total >= 1.5)
+  if (total >= 1.5 * f)
     return { branchPct: 42, p10k: 38, p20k: 17, status: 'Hardening', tone: 'warm' };
-  if (total <= 0.5 && reverseLit)
+  if (total <= 0.5 * f && reverseLit)
     return {
       branchPct: 25, p10k: null, p20k: null,
       status: 'Thesis dying', label: 'Schelling thesis RETIRED', tone: 'dead',
@@ -79,11 +82,18 @@ const num = (x) => (typeof x === 'number' && isFinite(x) ? x : null);
 function chi1(auto, manual) {
   const share = num(auto?.collateral?.combinedEthSharePct);
   const dd = num(auto?.eth?.drawdownFromPeakPct); // positive magnitude, e.g. 34 => -34%
+  const delta = num(auto?.collateral?.combinedEthShareDeltaPp);
   const m = manual?.chi1_stress || {};
+  const resolved = m.episode_through_50dd === true;
+
   let score = 0.5;
+  let stressActive = false;
   let detail =
     'Seed 0.5 — eligibility held through the 2022 drawdown, but stablecoin/T-bill collateral was not yet at scale. The real test is the next ≥50% drawdown.';
-  if (m.episode_through_50dd === true) {
+
+  if (resolved) {
+    // The operator recorded a COMPLETED ≥50% drawdown episode → the resolved verdict
+    // takes over and overrides the live branch (→ 1 survived / 0 failed).
     const deltaOk = num(m.share_delta_pp) !== null && Math.abs(m.share_delta_pp) <= 5;
     const noDelist = m.no_delist_or_ltv_cut === true;
     if (deltaOk && noDelist) {
@@ -93,17 +103,27 @@ function chi1(auto, manual) {
       score = 0;
       detail = `Failed the stress test: share Δ ${m.share_delta_pp ?? '?'}pp and/or a delist/LTV cut occurred during a ≥50% drawdown.`;
     }
+  } else if (dd !== null && dd >= 50) {
+    // STRESS-LIVE (A2): the ≥50% drawdown the seed treats as a *future* test is happening
+    // NOW, and the auto net-collateral leg already carries a real signal. Score from it
+    // instead of holding the neutral seed — a live soft-fail must read BELOW 0.5.
+    stressActive = true;
+    if (delta !== null && delta <= -5) {
+      score = 0.25; // soft fail — strictly below the neutral seed, never reads as neutral
+      detail = `⚠ Stress test ACTIVE — amid the current −${dd.toFixed(0)}% drawdown the ETH-system NET collateral share has fallen ${Math.abs(delta)}pp (>5pp), a soft fail of the ≤5pp light condition. Pending no-delist / LTV-cut confirmation (manual leg unset).`;
+    } else {
+      score = 0.5; // holding under stress — the auto leg is within tolerance
+      const driftPhrase = delta !== null ? `is ${delta >= 0 ? '+' : ''}${delta}pp (within ≤5pp)` : 'drift is still accruing (cannot confirm ≤5pp yet)';
+      detail = `Holding under stress — amid the current −${dd.toFixed(0)}% drawdown the ETH-system NET collateral share ${driftPhrase}. The no-delist / LTV-cut leg is still pending (manual, unset).`;
+    }
   }
-  const delta = num(auto?.collateral?.combinedEthShareDeltaPp);
+
   const driftTxt = delta !== null ? ` · share ${delta >= 0 ? '+' : ''}${delta}pp over tracked window` : '';
   const valueText =
     share !== null
       ? `ETH-system NET collateral ${share.toFixed(1)}%${driftTxt} · drawdown from peak ${dd !== null ? '−' + dd.toFixed(0) + '%' : 'n/a'}`
       : 'Awaiting collateral data';
-  if (score === 0.5 && delta !== null && delta <= -5 && dd !== null && dd >= 50) {
-    detail += ` ⚠ Caution: amid the current −${dd.toFixed(0)}% drawdown, the ETH-system NET collateral share has fallen ${Math.abs(delta)}pp (>5pp) — a soft fail of the light condition, pending the manual delist/LTV check.`;
-  }
-  return { score, valueText, detail };
+  return { score, stressActive, valueText, detail };
 }
 
 // CHI-3: AUTO. ETH used as a slashable security bond — proxied by ETH restaked
@@ -143,6 +163,14 @@ function chi5(auto, _manual) {
   const quartersUnder = num(auto?.vol?.quartersUnder50);
   const lltv = num(auto?.collateral?.ethMaxLltvPct);
   const lltvDelta = num(auto?.collateral?.ethMaxLltvDeltaPp);
+  // Field-level feed health for the haircut leg (A1). Set by fetch.mjs from whether the
+  // Morpho max-LTV sub-fetch succeeded: 'ok' | 'stale' (carried forward) | 'failed'.
+  // Legacy snapshots predate the field → infer from whether a value is present.
+  const lltvStatus = auto?.collateral?.ethMaxLltvStatus
+    ?? (lltv !== null ? 'ok' : 'failed');
+  const feedBroken = lltvStatus === 'failed';
+  const feedStale = lltvStatus === 'stale';
+  const feedFresh = lltvStatus === 'ok';
 
   const under50 = vol365 !== null && vol365 < 50;
   // Persistence: ≥2 consecutive quarters <50%. Accrues from history; until we have
@@ -150,22 +178,33 @@ function chi5(auto, _manual) {
   const persistent = quartersUnder !== null ? quartersUnder >= 2 : under50;
   const volLeg = under50 && persistent;
 
-  // Haircut compressing = on-chain max-LTV up ≥1pp since the first logged reading.
-  const compressing = lltvDelta !== null && lltvDelta >= 1;
+  // Haircut compressing = on-chain max-LTV up ≥1pp since the first logged reading. Only a
+  // FRESH feed can confirm it — a broken/stale feed must never read as "compressing" or
+  // (the A1 bug) as the benign "accruing" state, which is reserved for: feed OK but <2
+  // history points yet.
+  const compressing = feedFresh && lltvDelta !== null && lltvDelta >= 1;
   const legs = (volLeg ? 1 : 0) + (compressing ? 1 : 0);
   const score = legs === 2 ? 1 : legs === 1 ? 0.5 : 0;
 
   const lltvTxt = lltv !== null
-    ? ` · ETH max-LTV ${lltv.toFixed(0)}%${lltvDelta !== null ? ` (${lltvDelta >= 0 ? '+' : ''}${lltvDelta}pp)` : ''}`
-    : '';
+    ? ` · ETH max-LTV ${lltv.toFixed(0)}%${feedStale ? ' (stale)' : lltvDelta !== null ? ` (${lltvDelta >= 0 ? '+' : ''}${lltvDelta}pp)` : ''}`
+    : feedBroken ? ' · ETH max-LTV feed broken' : '';
   const valueText =
     vol365 !== null
       ? `RV365 ${vol365.toFixed(0)}% ${under50 ? '(<50% ✓)' : '(≥50%)'} · RV30 ${vol30 !== null ? vol30.toFixed(0) + '%' : '—'}${lltvTxt}`
       : 'Awaiting vol';
+  const haircutRead =
+    feedBroken ? 'feed unavailable / broken — Morpho max-LTV sub-fetch failed'
+      : feedStale ? 'stale — last good max-LTV carried forward; awaiting a fresh fetch'
+      : compressing ? 'confirmed (rising)'
+      : lltvDelta === null ? 'accruing (need a prior reading)'
+      : 'not compressing';
   return {
     score,
+    feedStatus: lltvStatus,
+    feedBroken,
     valueText,
-    detail: `Vol leg — trailing-365d realized vol <50% for ≥2 quarters: ${volLeg ? 'met' : 'not met'}. On-chain haircut leg — ETH max-LTV (Aave/Morpho) compressing the haircut: ${compressing ? 'confirmed (rising)' : lltvDelta === null ? 'accruing (need a prior reading)' : 'not compressing'}${lltv !== null ? ` · current haircut ≈ ${(100 - lltv).toFixed(0)}%` : ''}.`,
+    detail: `Vol leg — trailing-365d realized vol <50% for ≥2 quarters: ${volLeg ? 'met' : 'not met'}. On-chain haircut leg — ETH max-LTV (Aave/Morpho) compressing the haircut: ${haircutRead}${lltv !== null ? ` · current haircut ≈ ${(100 - lltv).toFixed(0)}%` : ''}.`,
   };
 }
 
@@ -177,9 +216,11 @@ const SCORERS = { chi1, chi3, chi5 };
 export function computeCHI(snapshot) {
   const auto = snapshot?.auto || {};
   const manual = snapshot?.manual || {};
+  // B3 (proposal, off by default): demote CHI-5 to an unscored watch (like CHI-4).
+  const demoteChi5 = manual?.experiments?.demote_chi5 === true;
   let reverseLit = false;
 
-  const components = CHI_COMPONENTS.map((meta) => {
+  const all = CHI_COMPONENTS.map((meta) => {
     const r = SCORERS[meta.key](auto, manual);
     if (meta.key === 'chi3' && r.reverse) reverseLit = true;
     return {
@@ -189,13 +230,24 @@ export function computeCHI(snapshot) {
       valueText: r.valueText,
       detail: r.detail,
       reverse: !!r.reverse,
+      feedStatus: r.feedStatus,
+      feedBroken: !!r.feedBroken,
+      stressActive: !!r.stressActive,
       source: r.source ? { label: 'manual', url: r.source } : meta.source,
     };
   });
 
-  const total = Math.round(components.reduce((a, c) => a + c.score, 0) * 2) / 2;
-  const litCount = components.filter((c) => c.lit).length;
-  const probabilities = mapProbabilities(total, reverseLit);
+  const isScored = (c) => !(demoteChi5 && c.key === 'chi5');
+  const components = all.filter(isScored);
+  const unscored = all.filter((c) => !isScored(c));
 
-  return { components, total, litCount, reverseLit, probabilities };
+  // Round to 0.01, NOT 0.5: CHI-1's stress-live soft-fail (0.25) makes quarter-step totals
+  // possible (e.g. 0.25+0.5+0 = 0.75). Rounding to 0.5 would round 0.75 back up to 1.0 and
+  // hide the soft-fail in the headline.
+  const total = Math.round(components.reduce((a, c) => a + c.score, 0) * 100) / 100;
+  const maxTotal = components.length;
+  const litCount = components.filter((c) => c.lit).length;
+  const probabilities = mapProbabilities(total, reverseLit, maxTotal);
+
+  return { components, unscored, total, maxTotal, litCount, reverseLit, probabilities };
 }

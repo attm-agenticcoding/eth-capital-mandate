@@ -24,6 +24,11 @@
 //          awaiting (no data / manual leg unset). Only `hit` counts toward the ≥3 rule.
 
 export const EXIT_THRESHOLD = 3; // ≥3 hits → consider exit
+// B1 (proposal, off by default): per-criterion weights for the `weighted` exit rule. KC-1 is
+// the thesis's core proposition (cash flow + premium both fail); KC-3 the settlement layer.
+export const KC_EXIT_WEIGHTS = { 'KC-1': 2, 'KC-3': 1.5 }; // others default to 1
+// KCs whose single hit raises an independent red alert under `single_hit_override`.
+export const KC_DECISIVE = ['KC-1', 'KC-3'];
 export const THESIS_CLOCK_DEFAULT = '2025-01-01'; // anchor for DEADLINE criteria; overridable via manual.json
 
 // Chains treated as "Ethereum-aligned" for KC-2's payment-layer share (mainnet + ETH-settled
@@ -34,6 +39,15 @@ export const ETH_ALIGNED_CHAINS = [
   'zkSync Era', 'Scroll', 'Linea', 'Starknet', 'Mantle', 'Blast', 'Mode', 'Zora', 'Taiko',
   'Manta', 'Metis', 'Fraxtal', 'Ink', 'Soneium', 'Unichain', 'World Chain', 'Abstract',
 ];
+
+// A6: the STRICT Ethereum-aligned set = mainnet + only rollups that genuinely settle to AND
+// post data-availability on Ethereum. Excludes the weakest-alignment chains in the broad
+// list: Polygon PoS (sidechain / commit-chain, not a rollup) and external-/alt-DA chains
+// that do NOT post DA to Ethereum by default — Mantle (EigenDA), Manta (Celestia),
+// Metis (off-chain DAC), Fraxtal (own DA layer). Display + divergence ONLY — which set
+// KC-2/KC-3 actually SCORE against is a semantic choice deferred to B2.
+const STRICT_ALIGNMENT_EXCLUDE = new Set(['Polygon', 'Mantle', 'Manta', 'Metis', 'Fraxtal']);
+export const ETH_ALIGNED_CHAINS_STRICT = ETH_ALIGNED_CHAINS.filter((c) => !STRICT_ALIGNMENT_EXCLUDE.has(c));
 
 export const KILL_CRITERIA = [
   {
@@ -95,6 +109,13 @@ function horizonEnd(iso, yrs) {
   d.setUTCFullYear(d.getUTCFullYear() + yrs);
   return d.toISOString().slice(0, 10);
 }
+// A3: a DEADLINE criterion whose condition is fully met and whose clock has passed ≥60%
+// of its horizon is `elevated` — a progressive warning so it doesn't jump straight from
+// `watch` to `hit` at the cliff with no intermediate signal. Still `watch` (NOT a hit).
+const ELEVATED_FRACTION = 0.6;
+function deadlineElevated(yrs, horizonYrs) {
+  return yrs !== null && yrs >= ELEVATED_FRACTION * horizonYrs;
+}
 // trailing run of history rows (oldest→newest log) that satisfy pred, counted from the end
 function trailingStreak(hist, pred) {
   if (!Array.isArray(hist)) return 0;
@@ -109,6 +130,18 @@ function deltaSinceOldest(hist, field) {
   if (!Array.isArray(hist)) return null;
   const vals = hist.map((r) => r && r[field]).filter((v) => typeof v === 'number' && isFinite(v));
   return vals.length >= 2 ? r1(vals[vals.length - 1] - vals[0]) : null;
+}
+// A7: share of NEW value added = Δ(numerator) ÷ Δ(denominator) across the logged window —
+// the true flow read (e.g. ETH's share of NEW RWA value), distinct from the change in ETH's
+// own stock share. Null ("accruing") until ≥2 points exist and the market actually grew.
+export function flowShareSinceOldest(hist, numField, denField) {
+  if (!Array.isArray(hist)) return null;
+  const rows = hist.filter((r) => r && typeof r[numField] === 'number' && isFinite(r[numField]) && typeof r[denField] === 'number' && isFinite(r[denField]));
+  if (rows.length < 2) return null;
+  const dNum = rows[rows.length - 1][numField] - rows[0][numField];
+  const dDen = rows[rows.length - 1][denField] - rows[0][denField];
+  if (!(dDen > 0)) return null; // no net new value to attribute yet (market flat/shrinking)
+  return r1((dNum / dDen) * 100);
 }
 
 // --- per-criterion scorers. Each: (auto, manual, hist, clock) => { status, valueText, detail } ---
@@ -129,48 +162,62 @@ function kc1(auto, _m, _h, clock) {
   if (!both) status = 'intact';
   else if (yrs === null || yrs < 5) status = 'watch';
   else status = 'hit';
+  const elevated = status === 'watch' && deadlineElevated(yrs, 5);
   const valueText = `L1 take-rate ${take !== null ? take + '%/yr' : '—'} · ETH/BTC corr ${corr !== null ? corr.toFixed(2) : '—'}`;
   const legTxt = `cash-flow-dead ${cashflowDead ? '✓' : '✗'} · no-premium ${noPremium ? '✓' : '✗'}`;
   const detail =
     status === 'intact'
       ? `${legTxt}. At least one leg has lifted — the thesis is becoming priceable on this axis.`
       : status === 'watch'
-        ? `${legTxt}. Both legs true, but this is EXPECTED pre-mandate — it only becomes a structural kill if still true at the ${end} horizon (5y).`
+        ? `${legTxt}. Both legs true, but this is EXPECTED pre-mandate — it only becomes a structural kill if still true at the ${end} horizon (5y).${elevated ? ` ⚠ ELEVATED: past 60% of the horizon (${yrs.toFixed(1)}y of 5y) with both legs still lit — approaching the cliff.` : ''}`
         : `${legTxt}. 5-year horizon (${end}) reached with both legs still true — cash flow and premium both failed to appear.`;
-  return { status, valueText, detail };
+  return { status, elevated, valueText, detail };
 }
 
 // KC-2 (LEVEL): ETH-aligned stablecoin share through 35%. Falls back to mainnet-only share
 // until fetch.mjs supplies the ETH-stack aggregate (then this auto-upgrades).
-function kc2(auto) {
-  const aligned = num(auto?.stablecoins?.ethAlignedSharePct);
+function kc2(auto, manual) {
+  // B2 (proposal, off by default): score the STRICT aligned share instead of the broad one.
+  const useStrict = manual?.experiments?.kc2_kc3_strict_alignment === true;
+  const broad = num(auto?.stablecoins?.ethAlignedSharePct);
+  const strict = num(auto?.stablecoins?.ethAlignedSharePctStrict);
   const mainnet = num(auto?.stablecoins?.ethSharePct);
-  const share = aligned ?? mainnet;
+  const share = useStrict ? (strict ?? broad ?? mainnet) : (broad ?? mainnet);
   if (share === null) return { status: 'awaiting', valueText: 'Awaiting stablecoin data', detail: 'Needs DefiLlama stablecoin-by-chain.' };
   const status = share < 35 ? 'hit' : share < 40 ? 'watch' : 'intact';
-  const unit = aligned != null ? 'ETH-stack' : 'ETH mainnet (stack aggregate pending next fetch)';
+  const unit = useStrict && strict != null ? 'ETH-stack STRICT' : broad != null ? 'ETH-stack' : 'ETH mainnet (stack aggregate pending next fetch)';
   return {
     status,
     valueText: `${unit} stablecoin share ${share.toFixed(1)}%`,
-    detail: `Payment-layer dominance. Kill <35% (from ~50%); watch <40%. Currently ${share.toFixed(1)}% → ${status === 'intact' ? 'well clear of the floor' : status === 'watch' ? 'approaching the floor' : 'below the floor'}.`,
+    detail: `Payment-layer dominance. Kill <35% (from ~50%); watch <40%. Currently ${share.toFixed(1)}% on the ${useStrict ? 'STRICT' : 'broad'} aligned set → ${status === 'intact' ? 'well clear of the floor' : status === 'watch' ? 'approaching the floor' : 'below the floor'}.`,
   };
 }
 
 // KC-3 (LEVEL + accruing flow): RWA Ethereum-system share < 50% (majority no longer choose ETH).
 // Stock proxy now; the truer NEW-issuance flow share accrues from our log.
-function kc3(auto, _m, hist) {
-  const share = num(auto?.rwa?.ethSharePct);
+function kc3(auto, manual, hist) {
+  // B2 (proposal, off by default): score the STRICT aligned RWA share instead of mainnet stock.
+  const useStrict = manual?.experiments?.kc2_kc3_strict_alignment === true;
+  const mainnet = num(auto?.rwa?.ethSharePct);
+  const strictAligned = num(auto?.rwa?.ethAlignedSharePctStrict);
+  const share = useStrict ? (strictAligned ?? mainnet) : mainnet;
   if (share === null) return { status: 'awaiting', valueText: 'Awaiting RWA data', detail: 'Needs DefiLlama RWA-by-chain.' };
-  const flow = deltaSinceOldest(hist, 'rwaEthSharePct'); // pp change since tracking began
+  const flow = deltaSinceOldest(hist, 'rwaEthSharePct'); // pp change in ETH's OWN stock share
+  // A7: the LEADING read — ETH's share of NEW RWA value added (Δ ETH RWA ÷ Δ total RWA) over
+  // the logged window. Stock has huge inertia (existing BUIDL etc. keeps ETH ≥50% even if
+  // every NEW product picks another chain), so the stock level hits years late. This flow
+  // read leads it. Measurement only — the stock level stays the (lagging) hit trigger.
+  const newIssuanceFlow = flowShareSinceOldest(hist, 'rwaEthValueUsd', 'rwaTotalUsd');
   let status;
   if (share < 50) status = 'hit';
   else if (flow !== null && flow <= -5) status = 'watch';
   else status = 'intact';
   const flowTxt = flow !== null ? ` · Δ ${flow >= 0 ? '+' : ''}${flow}pp since tracking` : ' · flow Δ accruing';
+  const newIssuanceTxt = newIssuanceFlow !== null ? `${newIssuanceFlow}%` : 'accruing (need ≥2 logged points)';
   return {
     status,
     valueText: `RWA ETH-system share ${share.toFixed(1)}%${flowTxt}`,
-    detail: `Institutional settlement layer. Kill = ETH stock share <50% (majority defect); watch = flow turning ≥5pp against ETH. The new-issuance flow read accrues from our own log.`,
+    detail: `Institutional settlement layer. Kill = ETH stock share <50% (majority defect, the lagging trigger); watch = stock-share flow turning ≥5pp against ETH. LEADING read — ETH's share of NEW RWA value added (Δ ETH RWA ÷ Δ total RWA): ${newIssuanceTxt}. Stock has huge inertia, so this new-issuance flow leads the level.`,
   };
 }
 
@@ -196,8 +243,11 @@ function kc4(auto, manual, _h, clock) {
     status = 'awaiting';
     detail = `Awaiting a user read on Stage 2 + based sequencing (window to ${end}). ${ratioTxt} as the economic proxy.`;
   }
+  const elevated = status === 'watch' && deadlineElevated(yrs, 3);
+  if (elevated) detail += ` ⚠ ELEVATED: past 60% of the 3y horizon (${yrs.toFixed(1)}y) still unmet.`;
   return {
     status,
+    elevated,
     valueText: `Stage 2 + based seq: ${milestone === true ? 'yes' : milestone === false ? 'not yet' : 'awaiting'} · ${ratioTxt}`,
     detail,
   };
@@ -245,15 +295,24 @@ function kc6(auto, _m, hist) {
   const solGain = deltaSinceOldest(hist, 'solChainSharePct');
   const ethGain = deltaSinceOldest(hist, 'ethChainSharePct');
   const race = solGain !== null && ethGain !== null ? r1(solGain - ethGain) : null; // >0 = SOL gaining on ETH
+  // A5: DEX-volume share is the LEADING leg — Solana's strength surfaces in throughput
+  // before locked TVL, so a TVL-only KC-6 reads the overtake years late. When SOL's DEX
+  // volume share crosses ETH's, escalate to watch even while TVL share still favors ETH.
+  const ethVol = num(auto?.chains?.ethDexVolSharePct);
+  const solVol = num(auto?.chains?.solDexVolSharePct);
+  const volLeadSol = ethVol !== null && solVol !== null && solVol > ethVol;
   let status;
-  if (solShare !== null && ethShare !== null && solShare > ethShare) status = 'hit';
-  else if (race !== null && race >= 5) status = 'watch';
+  if (solShare !== null && ethShare !== null && solShare > ethShare) status = 'hit'; // TVL overtaken
+  else if (volLeadSol || (race !== null && race >= 5)) status = 'watch';
   else status = 'intact';
   const raceTxt = race !== null ? ` · share race ${race >= 0 ? '+' : ''}${race}pp to SOL` : ' · growth race accruing';
+  const volTxt = ethVol !== null && solVol !== null
+    ? ` · DEX vol ETH ${ethVol}% vs SOL ${solVol}%${volLeadSol ? ' ⚠ SOL leads' : ''}`
+    : '';
   return {
     status,
-    valueText: `ETH ${ratio !== null ? ratio.toFixed(1) + '×' : '—'} Solana TVL${raceTxt}`,
-    detail: `Competitor benchmark. Kill = Solana overtakes ETH on all-chain TVL share (now ETH ${ethShare ?? '—'}% vs SOL ${solShare ?? '—'}%); watch = SOL gaining ≥5pp faster across metrics. Growth race accrues from our log.`,
+    valueText: `ETH ${ratio !== null ? ratio.toFixed(1) + '×' : '—'} Solana TVL${raceTxt}${volTxt}`,
+    detail: `Competitor benchmark. Kill = Solana overtakes ETH on all-chain TVL share (now ETH ${ethShare ?? '—'}% vs SOL ${solShare ?? '—'}%). Watch = SOL's leading DEX-volume share crosses ETH${ethVol !== null && solVol !== null ? ` (now ETH ${ethVol}% vs SOL ${solVol}%${volLeadSol ? ' — SOL already leads on volume' : ''})` : ''}, or SOL gaining ≥5pp faster on TVL share. Volume leads TVL; the growth race accrues from our log.`,
   };
 }
 
@@ -277,7 +336,9 @@ function kc7(_a, manual, _h, clock) {
     status = 'awaiting';
     detail = `Awaiting a user read (window to ${end}). No keyless feed — user-fed milestone.`;
   }
-  return { status, valueText: `Formal verification: ${prog === true ? 'progressing' : prog === false ? 'no progress' : 'awaiting'}`, detail };
+  const elevated = status === 'watch' && deadlineElevated(yrs, 2);
+  if (elevated) detail += ` ⚠ ELEVATED: past 60% of the 2y horizon (${yrs.toFixed(1)}y) still unmet.`;
+  return { status, elevated, valueText: `Formal verification: ${prog === true ? 'progressing' : prog === false ? 'no progress' : 'awaiting'}`, detail };
 }
 
 const SCORERS = { kc1, kc2, kc3, kc4, kc5, kc6, kc7 };
@@ -291,13 +352,30 @@ export function computeKill(snapshot, hist = []) {
 
   const criteria = KILL_CRITERIA.map((meta) => {
     const r = SCORERS[meta.key](auto, manual, hist, clock);
-    return { ...meta, status: r.status, hit: r.status === 'hit', valueText: r.valueText, detail: r.detail };
+    return { ...meta, status: r.status, hit: r.status === 'hit', elevated: !!r.elevated, valueText: r.valueText, detail: r.detail };
   });
 
   const hitCount = criteria.filter((c) => c.status === 'hit').length;
   const watchCount = criteria.filter((c) => c.status === 'watch').length;
   const awaitingCount = criteria.filter((c) => c.status === 'awaiting').length;
-  const triggered = hitCount >= EXIT_THRESHOLD;
+  const countTriggered = hitCount >= EXIT_THRESHOLD;
 
-  return { criteria, hitCount, watchCount, awaitingCount, triggered, exitThreshold: EXIT_THRESHOLD, clock };
+  // B1 (proposal, off by default): alternative exit rules. With the flag absent the result is
+  // byte-identical to the count rule; the weighted score / red-alert breakdown is always
+  // computed and exposed so the operator can compare reads without flipping anything.
+  const exitRule = manual?.experiments?.exit_rule || 'count';
+  const weightedHitScore = r1(
+    criteria.filter((c) => c.hit).reduce((a, c) => a + (KC_EXIT_WEIGHTS[c.id] ?? 1), 0),
+  );
+  const redAlertCriteria = criteria.filter((c) => c.hit && KC_DECISIVE.includes(c.id)).map((c) => c.id);
+  const redAlert = redAlertCriteria.length > 0;
+  let triggered = countTriggered;
+  if (exitRule === 'weighted') triggered = weightedHitScore >= EXIT_THRESHOLD;
+  else if (exitRule === 'single_hit_override') triggered = countTriggered || redAlert;
+
+  return {
+    criteria, hitCount, watchCount, awaitingCount, triggered,
+    exitThreshold: EXIT_THRESHOLD, clock,
+    experiment: { exitRule, exitBasis: exitRule, countTriggered, weightedHitScore, redAlert, redAlertCriteria },
+  };
 }

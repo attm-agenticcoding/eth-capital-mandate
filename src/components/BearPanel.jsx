@@ -25,6 +25,10 @@ export function BearPanel() {
     ? (sup.net30dEth / 30) * 365 / sup.totalSupplyEth * 100 : null;
   const drift = auto.collateral?.drift || [];
   const d = drift.at(-1);
+  // A5: leading competitor signal — Solana taking DEX-volume share before TVL share.
+  const ethVol = auto.chains?.ethDexVolSharePct;
+  const solVol = auto.chains?.solDexVolSharePct;
+  const solLeadsVol = ethVol != null && solVol != null && solVol > ethVol;
 
   return (
     <section className="panel">
@@ -78,6 +82,19 @@ export function BearPanel() {
             </div>
           )}
           <p className="bear-note">ETH-system vs tokenized-treasury / stablecoin share across Aave · Morpho · Sky.</p>
+        </div>
+
+        <div className="bear-card">
+          <div className="bear-h">Solana overtake — DEX volume <span className="muted">· leading metric</span></div>
+          <div className="stat-row">
+            <Stat label="ETH DEX vol share (30d)" value={auto.chains?.ethDexVolSharePct != null ? `${auto.chains.ethDexVolSharePct}%` : '—'} sub="of all-chain DEX volume" />
+            <Stat label="Solana DEX vol share (30d)" value={auto.chains?.solDexVolSharePct != null ? `${auto.chains.solDexVolSharePct}%` : '—'} sub="of all-chain DEX volume" tone={solLeadsVol ? 'bad' : undefined} />
+          </div>
+          <div className="stat-row">
+            <Stat label="ETH TVL share (lagging)" value={auto.chains?.ethSharePct != null ? `${auto.chains.ethSharePct}%` : '—'} />
+            <Stat label="Solana TVL share (lagging)" value={auto.chains?.solanaSharePct != null ? `${auto.chains.solanaSharePct}%` : '—'} />
+          </div>
+          <p className="bear-note">Solana's strength shows in <b>throughput/volume</b> before locked TVL, so DEX-volume share leads the TVL race (KC-6). {solLeadsVol ? <b>⚠ Solana already leads ETH on DEX volume share while TVL still favors ETH — the leading signal is lit.</b> : 'TVL still the lagging hit trigger; volume is the early-warning leg.'}</p>
         </div>
 
         <div className="bear-card">

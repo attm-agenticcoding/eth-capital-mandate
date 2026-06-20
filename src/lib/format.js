@@ -14,6 +14,8 @@ export const fmtPct = (n, d = 1) => (n == null || !isFinite(n) ? '—' : `${n.to
 export const fmtSignedPct = (n, d = 1) => (n == null || !isFinite(n) ? '—' : `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(d)}%`);
 export const fmtSigned = (n, d = 0) => (n == null || !isFinite(n) ? '—' : `${n >= 0 ? '+' : '−'}${fmtNum(Math.abs(n), d)}`);
 export const fmtEth = (n, d = 0) => (n == null ? '—' : `${fmtNum(n, d)} ETH`);
+// CHI score/total: half-steps at 1 decimal (1.0, 0.5), quarter-steps at 2 (0.75, 0.25).
+export const fmtScore = (n) => (n == null || !isFinite(n) ? '—' : Number.isInteger(n * 2) ? n.toFixed(1) : n.toFixed(2));
 
 export function timeAgo(iso) {
   if (!iso) return 'awaiting';
