@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { computeCHI } from '../src/lib/chi.mjs';
+import { computeCHI, mapProbabilities } from '../src/lib/chi.mjs';
 import { computeKill } from '../src/lib/kill.mjs';
 import { drawdownPctFromAth, alignmentGapPp, alignmentDivergenceTrend } from '../src/lib/market.mjs';
 import { ETH_ALIGNED_CHAINS, ETH_ALIGNED_CHAINS_STRICT, flowShareSinceOldest } from '../src/lib/kill.mjs';
@@ -410,6 +410,35 @@ test('B2 · flag on → KC-3 scores the strict-aligned RWA share, not mainnet st
   assert.equal(killOf(snap).byId['KC-3'].status, 'intact'); // default
   snap.manual.experiments = { kc2_kc3_strict_alignment: true };
   assert.equal(killOf(snap).byId['KC-3'].status, 'hit'); // flag reroutes basis
+});
+
+// ====================================================================== B3
+// Demote-CHI-5 is off by default; the flag drops it to an unscored watch (max 2).
+test('B3 · default → CHI-5 scored, 3 components, max 3 (unchanged)', () => {
+  const r = chiOf(current);
+  assert.equal(r.components.length, 3);
+  assert.equal(r.maxTotal, 3);
+  assert.equal(r.unscored.length, 0);
+  assert.ok(r.components.some((c) => c.id === 'CHI-5'));
+});
+
+test('B3 · flag on → CHI-5 unscored, max 2, total unchanged today (CHI-5 was 0)', () => {
+  const snap = clone(current);
+  snap.manual.experiments = { demote_chi5: true };
+  const r = chiOf(snap);
+  assert.equal(r.components.length, 2);
+  assert.equal(r.maxTotal, 2);
+  assert.equal(r.unscored.length, 1);
+  assert.equal(r.unscored[0].id, 'CHI-5');
+  assert.equal(r.total, 0.75); // CHI-1 0.25 + CHI-3 0.5, unchanged (CHI-5 contributed 0)
+});
+
+test('B3 · probability bands rescale with maxTotal (default max-3 identical)', () => {
+  // max 3: 2.5 → On track; max 2: 1.67 (=2.5·2/3) → On track, 1.66 → Hardening
+  assert.equal(mapProbabilities(2.5, false).status, 'On track');
+  assert.equal(mapProbabilities(2.5, false, 3).status, 'On track');
+  assert.equal(mapProbabilities(1.7, false, 2).status, 'On track');
+  assert.equal(mapProbabilities(1.6, false, 2).status, 'Hardening');
 });
 
 export { current, clone, readFixture, chiOf, killOf };

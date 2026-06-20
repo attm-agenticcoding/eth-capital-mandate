@@ -33,12 +33,15 @@ export const STATED_PRIOR = {
 // CHI total -> probability band. Evaluated top-down. Thresholds rescaled to the 3-component
 // (max 3) index; the probability priors themselves are unchanged. On track ≥2.5 (83%),
 // Hardening ≥1.5 (50%), Schelling-retired ≤0.5 + CHI-3 reverse lit.
-export function mapProbabilities(total, reverseLit) {
-  if (total >= 2.5)
+export function mapProbabilities(total, reverseLit, maxTotal = 3) {
+  // Thresholds are expressed against a max-3 index; scale them to the active denominator so
+  // B3's CHI-5 demotion (max 2) keeps coherent bands. maxTotal=3 → identical to before.
+  const f = maxTotal / 3;
+  if (total >= 2.5 * f)
     return { branchPct: 53, p10k: 45, p20k: 22, status: 'On track', tone: 'good' };
-  if (total >= 1.5)
+  if (total >= 1.5 * f)
     return { branchPct: 42, p10k: 38, p20k: 17, status: 'Hardening', tone: 'warm' };
-  if (total <= 0.5 && reverseLit)
+  if (total <= 0.5 * f && reverseLit)
     return {
       branchPct: 25, p10k: null, p20k: null,
       status: 'Thesis dying', label: 'Schelling thesis RETIRED', tone: 'dead',
@@ -213,9 +216,11 @@ const SCORERS = { chi1, chi3, chi5 };
 export function computeCHI(snapshot) {
   const auto = snapshot?.auto || {};
   const manual = snapshot?.manual || {};
+  // B3 (proposal, off by default): demote CHI-5 to an unscored watch (like CHI-4).
+  const demoteChi5 = manual?.experiments?.demote_chi5 === true;
   let reverseLit = false;
 
-  const components = CHI_COMPONENTS.map((meta) => {
+  const all = CHI_COMPONENTS.map((meta) => {
     const r = SCORERS[meta.key](auto, manual);
     if (meta.key === 'chi3' && r.reverse) reverseLit = true;
     return {
@@ -232,12 +237,17 @@ export function computeCHI(snapshot) {
     };
   });
 
+  const isScored = (c) => !(demoteChi5 && c.key === 'chi5');
+  const components = all.filter(isScored);
+  const unscored = all.filter((c) => !isScored(c));
+
   // Round to 0.01, NOT 0.5: CHI-1's stress-live soft-fail (0.25) makes quarter-step totals
   // possible (e.g. 0.25+0.5+0 = 0.75). Rounding to 0.5 would round 0.75 back up to 1.0 and
   // hide the soft-fail in the headline.
   const total = Math.round(components.reduce((a, c) => a + c.score, 0) * 100) / 100;
+  const maxTotal = components.length;
   const litCount = components.filter((c) => c.lit).length;
-  const probabilities = mapProbabilities(total, reverseLit);
+  const probabilities = mapProbabilities(total, reverseLit, maxTotal);
 
-  return { components, total, litCount, reverseLit, probabilities };
+  return { components, unscored, total, maxTotal, litCount, reverseLit, probabilities };
 }

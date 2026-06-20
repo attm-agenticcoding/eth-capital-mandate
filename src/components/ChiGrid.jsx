@@ -93,6 +93,22 @@ export function ChiGrid() {
       <div className="chi-grid">
         {chi.components.map((c) => <ChiCard key={c.id} c={c} />)}
       </div>
+      {chi.unscored?.length > 0 && (
+        <div className="chi-unscored">
+          <div className="chi-unscored-h muted">Demoted to unscored watch (experiment) — does not move the index:</div>
+          {chi.unscored.map((c) => (
+            <div key={c.id} className="chi-card unscored">
+              <div className="chi-card-head">
+                <span className="chi-id">{c.id}</span>
+                <span className="chi-name">{c.name}</span>
+                <span className="chi-score-badge muted" style={{ borderColor: '#3a4453' }}>unscored</span>
+              </div>
+              <div className="chi-value">{c.valueText}</div>
+              <div className="chi-detail">{c.detail}</div>
+            </div>
+          ))}
+        </div>
+      )}
       <p className="chi-note muted">
         Numbering keeps the original IDs. <b>CHI-2</b> (demand-side enforcement) and <b>CHI-6</b> (duration) were
         retired — CHI-2's signal is already in CHI-1's net ETH-vs-stable collateral drift, and a fixed-term ETH-credit
