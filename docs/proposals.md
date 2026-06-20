@@ -143,7 +143,7 @@ log — i.e. demote only if it's still pinned at 0 after the haircut leg has had
 
 ### ⚠ Separate operator confirmation — `thesis_clock_start`
 
-`thesis_clock_start = 2025-01-01` anchors **every deadline criterion** (KC-1 5y, KC-4 3y, KC-7 2y) and
-now the A3 `elevated` thresholds. **A one-year error shifts KC-1's hit date by a year.** Please
-confirm this date corresponds to a real observation/position start. **Not changed here** — it is
-operator-owned in `manual.json`.
+`thesis_clock_start` anchors **every deadline criterion** (KC-1 5y, KC-4 3y, KC-7 2y) and the A3
+`elevated` thresholds — a one-year error shifts KC-1's hit date by a year. **Resolved 2026-06-19:**
+the operator set it to **`2026-06-01`** (observation window starts this month). New horizons:
+KC-1 hit **2031-06-01** (elevated from 2029-06-01), KC-4 hit **2029-06-01**, KC-7 hit **2028-06-01**.

@@ -41,6 +41,6 @@ Implemented behind `manual.json → experiments.*` (absent → off) and written 
 
 ### ⚠ Awaiting operator decisions
 1. **B1 / B2 / B3** — flip any flag on? (defaults leave the index exactly as today).
-2. **`thesis_clock_start = 2025-01-01`** — please confirm this is the real observation/position start.
-   It anchors every deadline horizon (KC-1 5y, KC-4 3y, KC-7 2y) and the A3 elevated thresholds; a
-   one-year error shifts KC-1's hit date by a year. **Not changed here.**
+2. ~~`thesis_clock_start`~~ **Resolved 2026-06-19** → set to **`2026-06-01`** (observation starts this
+   month). Deadline horizons now KC-1 2031-06-01, KC-4 2029-06-01, KC-7 2028-06-01; live statuses
+   unchanged (all deadlines early-window → KC-1 watch, KC-4/7 awaiting).
