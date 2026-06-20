@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { computeCHI } from '../src/lib/chi.mjs';
 import { computeKill } from '../src/lib/kill.mjs';
 import { drawdownPctFromAth, alignmentGapPp, alignmentDivergenceTrend } from '../src/lib/market.mjs';
-import { ETH_ALIGNED_CHAINS, ETH_ALIGNED_CHAINS_STRICT } from '../src/lib/kill.mjs';
+import { ETH_ALIGNED_CHAINS, ETH_ALIGNED_CHAINS_STRICT, flowShareSinceOldest } from '../src/lib/kill.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -303,6 +303,38 @@ test('A6 · adding strict/broad fields does NOT change KC-2/KC-3 scored status',
   const { byId } = killOf(snap);
   assert.equal(byId['KC-2'].status, 'intact'); // still scores ethAlignedSharePct (broad) / mainnet
   assert.equal(byId['KC-3'].status, 'intact'); // still scores mainnet ethSharePct
+});
+
+// ====================================================================== A7
+// KC-3 surfaces a labeled NEW-ISSUANCE flow read; default stock-hit logic is unchanged.
+test('A7 · flowShareSinceOldest = Δnum ÷ Δden, null until ≥2 points / net growth', () => {
+  const hist = [
+    { rwaEthValueUsd: 14_000_000_000, rwaTotalUsd: 26_000_000_000 },
+    { rwaEthValueUsd: 14_400_000_000, rwaTotalUsd: 28_000_000_000 },
+  ];
+  // ETH added 0.4B of the 2.0B new RWA value → 20% of new issuance
+  assert.equal(flowShareSinceOldest(hist, 'rwaEthValueUsd', 'rwaTotalUsd'), 20);
+  assert.equal(flowShareSinceOldest([hist[0]], 'rwaEthValueUsd', 'rwaTotalUsd'), null); // 1 point
+  assert.equal(flowShareSinceOldest([], 'rwaEthValueUsd', 'rwaTotalUsd'), null);
+  // market shrank → not attributable
+  assert.equal(flowShareSinceOldest([{ rwaEthValueUsd: 5, rwaTotalUsd: 10 }, { rwaEthValueUsd: 4, rwaTotalUsd: 9 }], 'rwaEthValueUsd', 'rwaTotalUsd'), null);
+});
+
+test('A7 · KC-3 detail shows the flow read "accruing" with no history; status unchanged', () => {
+  const c = killOf(current, []).byId['KC-3'];
+  assert.equal(c.status, 'intact'); // stock 54.7% ≥ 50 → default logic unchanged
+  assert.match(c.detail, /new RWA value/i);
+  assert.match(c.detail, /accruing/i);
+});
+
+test('A7 · KC-3 detail shows a computed flow % once the log has ≥2 RWA-value points', () => {
+  const histRows = [
+    { rwaEthSharePct: 55, rwaEthValueUsd: 14_000_000_000, rwaTotalUsd: 26_000_000_000 },
+    { rwaEthSharePct: 54.7, rwaEthValueUsd: 14_200_000_000, rwaTotalUsd: 28_000_000_000 },
+  ];
+  const c = killOf(current, histRows).byId['KC-3'];
+  assert.match(c.detail, /10%/); // 0.2B of 2.0B new value = 10%
+  assert.equal(c.status, 'intact'); // flow read is leading/labeled, does NOT change the hit trigger
 });
 
 export { current, clone, readFixture, chiOf, killOf };

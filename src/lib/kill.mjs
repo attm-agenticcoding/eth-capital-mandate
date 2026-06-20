@@ -126,6 +126,18 @@ function deltaSinceOldest(hist, field) {
   const vals = hist.map((r) => r && r[field]).filter((v) => typeof v === 'number' && isFinite(v));
   return vals.length >= 2 ? r1(vals[vals.length - 1] - vals[0]) : null;
 }
+// A7: share of NEW value added = Δ(numerator) ÷ Δ(denominator) across the logged window —
+// the true flow read (e.g. ETH's share of NEW RWA value), distinct from the change in ETH's
+// own stock share. Null ("accruing") until ≥2 points exist and the market actually grew.
+export function flowShareSinceOldest(hist, numField, denField) {
+  if (!Array.isArray(hist)) return null;
+  const rows = hist.filter((r) => r && typeof r[numField] === 'number' && isFinite(r[numField]) && typeof r[denField] === 'number' && isFinite(r[denField]));
+  if (rows.length < 2) return null;
+  const dNum = rows[rows.length - 1][numField] - rows[0][numField];
+  const dDen = rows[rows.length - 1][denField] - rows[0][denField];
+  if (!(dDen > 0)) return null; // no net new value to attribute yet (market flat/shrinking)
+  return r1((dNum / dDen) * 100);
+}
 
 // --- per-criterion scorers. Each: (auto, manual, hist, clock) => { status, valueText, detail } ---
 
@@ -178,16 +190,22 @@ function kc2(auto) {
 function kc3(auto, _m, hist) {
   const share = num(auto?.rwa?.ethSharePct);
   if (share === null) return { status: 'awaiting', valueText: 'Awaiting RWA data', detail: 'Needs DefiLlama RWA-by-chain.' };
-  const flow = deltaSinceOldest(hist, 'rwaEthSharePct'); // pp change since tracking began
+  const flow = deltaSinceOldest(hist, 'rwaEthSharePct'); // pp change in ETH's OWN stock share
+  // A7: the LEADING read — ETH's share of NEW RWA value added (Δ ETH RWA ÷ Δ total RWA) over
+  // the logged window. Stock has huge inertia (existing BUIDL etc. keeps ETH ≥50% even if
+  // every NEW product picks another chain), so the stock level hits years late. This flow
+  // read leads it. Measurement only — the stock level stays the (lagging) hit trigger.
+  const newIssuanceFlow = flowShareSinceOldest(hist, 'rwaEthValueUsd', 'rwaTotalUsd');
   let status;
   if (share < 50) status = 'hit';
   else if (flow !== null && flow <= -5) status = 'watch';
   else status = 'intact';
   const flowTxt = flow !== null ? ` · Δ ${flow >= 0 ? '+' : ''}${flow}pp since tracking` : ' · flow Δ accruing';
+  const newIssuanceTxt = newIssuanceFlow !== null ? `${newIssuanceFlow}%` : 'accruing (need ≥2 logged points)';
   return {
     status,
     valueText: `RWA ETH-system share ${share.toFixed(1)}%${flowTxt}`,
-    detail: `Institutional settlement layer. Kill = ETH stock share <50% (majority defect); watch = flow turning ≥5pp against ETH. The new-issuance flow read accrues from our own log.`,
+    detail: `Institutional settlement layer. Kill = ETH stock share <50% (majority defect, the lagging trigger); watch = stock-share flow turning ≥5pp against ETH. LEADING read — ETH's share of NEW RWA value added (Δ ETH RWA ÷ Δ total RWA): ${newIssuanceTxt}. Stock has huge inertia, so this new-issuance flow leads the level.`,
   };
 }
 

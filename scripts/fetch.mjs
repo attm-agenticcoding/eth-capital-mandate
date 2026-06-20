@@ -479,6 +479,7 @@ async function getRwa() {
   const strictPct = total > 0 ? r2((sumWhere(strictSet) / total) * 100, 1) : null;
   return {
     totalUsd: Math.round(total),
+    ethUsd: byChain.Ethereum ? Math.round(byChain.Ethereum) : null, // A7: absolute mainnet RWA value (for new-issuance flow)
     ethSharePct: byChain.Ethereum ? r2((byChain.Ethereum / total) * 100, 1) : null, // mainnet — KC-3 scores this
     ethAlignedSharePctBroad: broadPct,
     ethAlignedSharePctStrict: strictPct,
@@ -752,6 +753,8 @@ async function run() {
     ethMaxLltvPct: auto.collateral?.ethMaxLltvPct ?? null,
     // kill-criteria series (KC-2/3/5/6) — logged so the flow/persistence legs accrue
     rwaEthSharePct: auto.rwa?.ethSharePct ?? null,
+    rwaEthValueUsd: auto.rwa?.ethUsd ?? null, // A7: absolute ETH RWA value — new-issuance flow accrues from these
+    rwaTotalUsd: auto.rwa?.totalUsd ?? null,
     stablecoinEthAlignedSharePct: auto.stablecoins?.ethAlignedSharePct ?? null,
     stablecoinEthAlignedStrictSharePct: auto.stablecoins?.ethAlignedSharePctStrict ?? null,
     stablecoinAlignedGapPp: auto.stablecoins?.ethAlignedBroadMinusStrictPp ?? null,
