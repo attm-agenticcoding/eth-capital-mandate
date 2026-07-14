@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-07-14T07:24:03.046Z",
+  "generatedUtc": "2026-07-14T16:43:02.854Z",
   "meta": {
     "sources": [
       {
@@ -7,23 +7,7 @@
         "label": "DefiLlama Stablecoins",
         "url": "https://defillama.com/stablecoins",
         "ok": true,
-        "asOf": "2026-07-14T07:24:03.046Z",
-        "error": null
-      },
-      {
-        "key": "growthepie",
-        "label": "growthepie.xyz",
-        "url": "https://www.growthepie.xyz",
-        "ok": true,
-        "asOf": "2026-07-14T07:24:03.046Z",
-        "error": null
-      },
-      {
-        "key": "defillama_rwa",
-        "label": "DefiLlama RWA",
-        "url": "https://defillama.com/protocols/RWA",
-        "ok": true,
-        "asOf": "2026-07-14T07:24:03.046Z",
+        "asOf": "2026-07-14T16:43:02.854Z",
         "error": null
       },
       {
@@ -31,23 +15,7 @@
         "label": "CoinGecko",
         "url": "https://www.coingecko.com/en/coins/ethereum",
         "ok": true,
-        "asOf": "2026-07-14T07:24:03.046Z",
-        "error": null
-      },
-      {
-        "key": "ultrasound",
-        "label": "ultrasound.money",
-        "url": "https://ultrasound.money",
-        "ok": true,
-        "asOf": "2026-07-14T07:24:03.046Z",
-        "error": null
-      },
-      {
-        "key": "l2beat",
-        "label": "L2BEAT",
-        "url": "https://l2beat.com",
-        "ok": true,
-        "asOf": "2026-07-14T07:24:03.046Z",
+        "asOf": "2026-07-14T16:43:02.854Z",
         "error": null
       },
       {
@@ -55,7 +23,39 @@
         "label": "DefiLlama Chains",
         "url": "https://defillama.com/chains",
         "ok": true,
-        "asOf": "2026-07-14T07:24:03.046Z",
+        "asOf": "2026-07-14T16:43:02.854Z",
+        "error": null
+      },
+      {
+        "key": "growthepie",
+        "label": "growthepie.xyz",
+        "url": "https://www.growthepie.xyz",
+        "ok": true,
+        "asOf": "2026-07-14T16:43:02.854Z",
+        "error": null
+      },
+      {
+        "key": "defillama_rwa",
+        "label": "DefiLlama RWA",
+        "url": "https://defillama.com/protocols/RWA",
+        "ok": true,
+        "asOf": "2026-07-14T16:43:02.854Z",
+        "error": null
+      },
+      {
+        "key": "l2beat",
+        "label": "L2BEAT",
+        "url": "https://l2beat.com",
+        "ok": true,
+        "asOf": "2026-07-14T16:43:02.854Z",
+        "error": null
+      },
+      {
+        "key": "ultrasound",
+        "label": "ultrasound.money",
+        "url": "https://ultrasound.money",
+        "ok": true,
+        "asOf": "2026-07-14T16:43:02.854Z",
         "error": null
       },
       {
@@ -63,7 +63,7 @@
         "label": "DefiLlama Restaking",
         "url": "https://defillama.com/protocols/Restaking",
         "ok": true,
-        "asOf": "2026-07-14T07:24:03.046Z",
+        "asOf": "2026-07-14T16:43:02.854Z",
         "error": null
       },
       {
@@ -71,7 +71,7 @@
         "label": "DefiLlama + Morpho API (Aave/Morpho/Sky)",
         "url": "https://defillama.com/protocol/aave-v3",
         "ok": true,
-        "asOf": "2026-07-14T07:24:03.046Z",
+        "asOf": "2026-07-14T16:43:02.854Z",
         "error": null
       }
     ],
@@ -91,8 +91,8 @@
         },
         "score": 0.5,
         "lit": true,
-        "valueText": "ETH-system NET collateral 53.2% · share -1.6pp over tracked window · drawdown from peak −64%",
-        "detail": "Holding under stress — amid the current −64% drawdown the ETH-system NET collateral share is -1.6pp (within ≤5pp). The no-delist / LTV-cut leg is still pending (manual, unset).",
+        "valueText": "ETH-system NET collateral 53.9% · share -0.9pp over tracked window · drawdown from peak −62%",
+        "detail": "Holding under stress — amid the current −62% drawdown the ETH-system NET collateral share is -0.9pp (within ≤5pp). The no-delist / LTV-cut leg is still pending (manual, unset).",
         "reverse": false,
         "feedBroken": false,
         "stressActive": true
@@ -109,8 +109,8 @@
         },
         "score": 0.5,
         "lit": true,
-        "valueText": "2.90M ETH restaked · 7.1% of staked ETH",
-        "detail": "2.90M ETH restaked (EigenLayer+Symbiotic+Karak, ETH-denominated). Lights at ≥5M; ≥1M = partial. NB: headline TVL over-reads real demand (points-farming, LST double-count, non-live-slashing AVSs).",
+        "valueText": "2.88M ETH restaked · 7.1% of staked ETH",
+        "detail": "2.88M ETH restaked (EigenLayer+Symbiotic+Karak, ETH-denominated). Lights at ≥5M; ≥1M = partial. NB: headline TVL over-reads real demand (points-farming, LST double-count, non-live-slashing AVSs).",
         "reverse": false,
         "feedBroken": false,
         "stressActive": false
@@ -127,7 +127,7 @@
         },
         "score": 0,
         "lit": false,
-        "valueText": "RV365 67% (≥50%) · RV30 42% · ETH max-LTV 86% (+0pp)",
+        "valueText": "RV365 67% (≥50%) · RV30 46% · ETH max-LTV 86% (+0pp)",
         "detail": "Vol leg — trailing-365d realized vol <50% for ≥2 quarters: not met. On-chain haircut leg — ETH max-LTV (Aave/Morpho) compressing the haircut: not compressing · current haircut ≈ 14%.",
         "reverse": false,
         "feedStatus": "ok",
@@ -150,14 +150,14 @@
   },
   "auto": {
     "eth": {
-      "price": 1780.64,
-      "mcap": 214892698320,
-      "change24hPct": -0.18,
+      "price": 1873.58,
+      "mcap": 226150301110,
+      "change24hPct": 5.72,
       "ath": 4946.05,
-      "athChangePct": -64,
+      "athChangePct": -62.1,
       "circulating": 120682986.1129002,
-      "drawdownFromPeakPct": 64,
-      "drawdownFrom365dHighPct": 63.1,
+      "drawdownFromPeakPct": 62.1,
+      "drawdownFrom365dHighPct": 61.2,
       "priceSeries": [
         {
           "t": 1752537600000,
@@ -720,17 +720,17 @@
           "v": 1805.54
         },
         {
-          "t": 1784013830000,
-          "v": 1780.64
+          "t": 1784047355000,
+          "v": 1873.73
         }
       ]
     },
     "btc": {
-      "price": 62506,
-      "mcap": 1253623876835
+      "price": 64793,
+      "mcap": 1299668974078
     },
     "ratio": {
-      "now": 0.028488,
+      "now": 0.028916,
       "series": [
         {
           "t": 1752537600000,
@@ -1293,17 +1293,17 @@
           "v": 0.028324
         },
         {
-          "t": 1784013830000,
-          "v": 0.028488
+          "t": 1784047355000,
+          "v": 0.028919
         }
       ]
     },
     "vol": {
-      "d30Pct": 42.3,
-      "d365Pct": 66.6,
+      "d30Pct": 46.1,
+      "d365Pct": 66.9,
       "quartersUnder50": 1,
       "quarterVols": [
-        47,
+        49,
         79,
         60,
         74
@@ -1870,13 +1870,13 @@
           "v": 42.7
         },
         {
-          "t": 1784013830000,
+          "t": 1784047355000,
           "v": 43.2
         }
       ]
     },
     "correlation": {
-      "now": 0.8773,
+      "now": 0.8842,
       "series": [
         {
           "t": 1760313600000,
@@ -2439,21 +2439,21 @@
           "v": 0.8777
         },
         {
-          "t": 1784013830000,
-          "v": 0.8773
+          "t": 1784047355000,
+          "v": 0.8842
         }
       ]
     },
     "_market": {
-      "asOf": "2026-07-14T07:24:03.046Z",
+      "asOf": "2026-07-14T16:43:02.854Z",
       "stale": false
     },
     "collateral": {
-      "combinedEthSharePct": 53.2,
-      "combinedStableSharePct": 11.6,
-      "combinedEthShareDeltaPp": -1.6,
+      "combinedEthSharePct": 53.9,
+      "combinedStableSharePct": 11.3,
+      "combinedEthShareDeltaPp": -0.9,
       "driftWindowMonths": 18,
-      "combinedTotalUsd": 14730374100,
+      "combinedTotalUsd": 15266330357,
       "ethMaxLltvPct": 86,
       "ethMaxLltvStatus": "ok",
       "venuesUsed": [
@@ -2468,22 +2468,22 @@
           "name": "Aave",
           "slug": "aave-v3",
           "basis": "DL net",
-          "totalUsd": 10805336669,
-          "ethSharePct": 52
+          "totalUsd": 11185198811,
+          "ethSharePct": 52.7
         },
         {
           "name": "Morpho",
           "slug": "morpho-blue",
           "basis": "API net (rule B)",
-          "totalUsd": 2449830215,
-          "ethSharePct": 31.2
+          "totalUsd": 2532485522,
+          "ethSharePct": 31.8
         },
         {
           "name": "Sky",
           "slug": "makerdao",
           "basis": "vault collateral (PSM excluded)",
-          "totalUsd": 1475207216,
-          "ethSharePct": 98.5
+          "totalUsd": 1548646024,
+          "ethSharePct": 98.6
         }
       ],
       "drift": [
@@ -2491,31 +2491,31 @@
           "t": 1740700800000,
           "ethPct": 54.8,
           "stablePct": 16.1,
-          "btcPct": 25.3
+          "btcPct": 25.4
         },
         {
           "t": 1743379200000,
           "ethPct": 54.5,
           "stablePct": 11.8,
-          "btcPct": 30
+          "btcPct": 30.1
         },
         {
           "t": 1745971200000,
           "ethPct": 47.8,
-          "stablePct": 16.9,
-          "btcPct": 32
+          "stablePct": 16.8,
+          "btcPct": 32.1
         },
         {
           "t": 1748649600000,
           "ethPct": 56.1,
-          "stablePct": 12.2,
-          "btcPct": 28.6
+          "stablePct": 12.1,
+          "btcPct": 28.7
         },
         {
           "t": 1751241600000,
           "ethPct": 51.1,
-          "stablePct": 17.7,
-          "btcPct": 28
+          "stablePct": 17.6,
+          "btcPct": 28.1
         },
         {
           "t": 1753920000000,
@@ -2526,20 +2526,20 @@
         {
           "t": 1756598400000,
           "ethPct": 55.1,
-          "stablePct": 22.2,
-          "btcPct": 20
+          "stablePct": 22.1,
+          "btcPct": 20.1
         },
         {
           "t": 1759190400000,
           "ethPct": 58.1,
           "stablePct": 17.4,
-          "btcPct": 21.5
+          "btcPct": 21.6
         },
         {
           "t": 1761868800000,
           "ethPct": 55.4,
           "stablePct": 17.7,
-          "btcPct": 23.4
+          "btcPct": 23.5
         },
         {
           "t": 1764460800000,
@@ -2550,189 +2550,189 @@
         {
           "t": 1767139200000,
           "ethPct": 58.7,
-          "stablePct": 15.7,
+          "stablePct": 15.6,
           "btcPct": 23.1
         },
         {
           "t": 1769817600000,
           "ethPct": 57.5,
           "stablePct": 17.3,
-          "btcPct": 22.7
+          "btcPct": 22.8
         },
         {
           "t": 1772236800000,
           "ethPct": 47.9,
-          "stablePct": 25.7,
-          "btcPct": 23.9
+          "stablePct": 25.6,
+          "btcPct": 24
         },
         {
           "t": 1774915200000,
           "ethPct": 53.1,
-          "stablePct": 19.7,
+          "stablePct": 19.6,
           "btcPct": 24.7
         },
         {
           "t": 1777507200000,
-          "ethPct": 61.5,
+          "ethPct": 61.4,
           "stablePct": 6.1,
-          "btcPct": 28.8
+          "btcPct": 28.9
         },
         {
           "t": 1780185600000,
           "ethPct": 54.2,
-          "stablePct": 9.7,
+          "stablePct": 9.6,
           "btcPct": 33.3
         },
         {
           "t": 1782777600000,
           "ethPct": 52,
-          "stablePct": 11.6,
-          "btcPct": 33.3
+          "stablePct": 11.5,
+          "btcPct": 33.4
         },
         {
           "t": 1785456000000,
-          "ethPct": 53.2,
-          "stablePct": 11.6,
-          "btcPct": 32.3
+          "ethPct": 53.9,
+          "stablePct": 11.3,
+          "btcPct": 32
         }
       ],
-      "asOf": "2026-07-14T07:24:03.046Z",
+      "asOf": "2026-07-14T16:43:02.854Z",
       "stale": false,
       "ethMaxLltvDeltaPp": 0
     },
     "stablecoins": {
-      "totalUsd": 301412381993,
-      "ethUsd": 149634953772,
+      "totalUsd": 301565978064,
+      "ethUsd": 149675724145,
       "ethSharePct": 49.6,
-      "ethAlignedUsd": 162901055809,
-      "ethAlignedSharePct": 54,
-      "ethAlignedSharePctBroad": 54,
-      "ethAlignedSharePctStrict": 52.7,
+      "ethAlignedUsd": 163107691031,
+      "ethAlignedSharePct": 54.1,
+      "ethAlignedSharePctBroad": 54.1,
+      "ethAlignedSharePctStrict": 52.8,
       "ethAlignedBroadMinusStrictPp": 1.3,
       "byChain": [
         {
           "name": "Ethereum",
-          "usd": 149634953772,
+          "usd": 149675724145,
           "sharePct": 49.6
         },
         {
           "name": "Tron",
-          "usd": 91075531651,
+          "usd": 91088904593,
           "sharePct": 30.2
         },
         {
           "name": "Solana",
-          "usd": 14479458707,
+          "usd": 14392264652,
           "sharePct": 4.8
         },
         {
           "name": "BSC",
-          "usd": 13761643807,
+          "usd": 13759656842,
           "sharePct": 4.6
         },
         {
           "name": "Hyperliquid L1",
-          "usd": 6181588391,
+          "usd": 6199602766,
           "sharePct": 2.1
         },
         {
           "name": "Base",
-          "usd": 4788364121,
+          "usd": 4873179349,
           "sharePct": 1.6
         },
         {
           "name": "Arbitrum",
-          "usd": 3607799204,
+          "usd": 3690395506,
           "sharePct": 1.2
         },
         {
           "name": "Polygon",
-          "usd": 3374408568,
+          "usd": 3369668772,
           "sharePct": 1.1
         }
       ],
-      "asOf": "2026-07-14T07:24:03.046Z",
+      "asOf": "2026-07-14T16:43:02.854Z",
       "stale": false
     },
     "chains": {
-      "ethTvl": 40007939473,
-      "solanaTvl": 4810832403,
-      "totalTvl": 73677281347,
-      "ethSharePct": 54.3,
+      "ethTvl": 41065762131,
+      "solanaTvl": 4866183564,
+      "totalTvl": 75225243625,
+      "ethSharePct": 54.6,
       "solanaSharePct": 6.5,
-      "ethDexVolSharePct": 14.7,
+      "ethDexVolSharePct": 14.6,
       "solDexVolSharePct": 31,
       "dexVolWindow": "30d",
-      "dexVolTotal30dUsd": 199666774739,
-      "ethDexVol30dUsd": 29272974103,
-      "solDexVol30dUsd": 61824913349,
-      "asOf": "2026-07-14T07:24:03.046Z",
+      "dexVolTotal30dUsd": 200187095439,
+      "ethDexVol30dUsd": 29281761668,
+      "solDexVol30dUsd": 62141625054,
+      "asOf": "2026-07-14T16:43:02.854Z",
       "stale": false
     },
     "rwa": {
-      "totalUsd": 25863916243,
-      "ethUsd": 13525147602,
-      "ethSharePct": 52.3,
-      "ethAlignedSharePctBroad": 60,
-      "ethAlignedSharePctStrict": 58.9,
+      "totalUsd": 25915434715,
+      "ethUsd": 13579034391,
+      "ethSharePct": 52.4,
+      "ethAlignedSharePctBroad": 60.1,
+      "ethAlignedSharePctStrict": 59,
       "ethAlignedBroadMinusStrictPp": 1.1,
       "byChain": [
         {
           "name": "Ethereum",
-          "usd": 13525147602,
-          "sharePct": 52.3
+          "usd": 13579034391,
+          "sharePct": 52.4
         },
         {
           "name": "Binance",
-          "usd": 3779120084,
-          "sharePct": 14.6
+          "usd": 3766520065,
+          "sharePct": 14.5
         },
         {
           "name": "Solana",
-          "usd": 1671616745,
+          "usd": 1676037159,
           "sharePct": 6.5
         },
         {
           "name": "Avalanche",
-          "usd": 1512485343,
+          "usd": 1512613387,
           "sharePct": 5.8
         },
         {
           "name": "Stellar",
-          "usd": 1097705042,
+          "usd": 1100194468,
           "sharePct": 4.2
         },
         {
           "name": "zkSync Era",
-          "usd": 985450147,
+          "usd": 985449839,
           "sharePct": 3.8
         },
         {
           "name": "Aptos",
-          "usd": 858291300,
+          "usd": 858295877,
           "sharePct": 3.3
         },
         {
           "name": "Arbitrum",
-          "usd": 536742400,
+          "usd": 538661412,
           "sharePct": 2.1
         }
       ],
-      "asOf": "2026-07-14T07:24:03.046Z",
+      "asOf": "2026-07-14T16:43:02.854Z",
       "stale": false
     },
     "supply": {
-      "totalSupplyEth": 121862703,
-      "stakedEth": 40775356,
-      "stakedEffectiveEth": 40670869,
+      "totalSupplyEth": 121863800,
+      "stakedEth": 40797477,
+      "stakedEffectiveEth": 40685116,
       "stakingPct": 33.5,
-      "net30dEth": 84077,
-      "net7dEth": 19825,
-      "sinceMergeEth": 1341562,
-      "burn30dEth": 1212,
-      "burnSinceMergeEth": 2012888,
-      "issuance30dEth": 85289,
-      "issuanceGrossPerYrEth": 1041780,
+      "net30dEth": 84082,
+      "net7dEth": 19823,
+      "sinceMergeEth": 1342647,
+      "burn30dEth": 1227,
+      "burnSinceMergeEth": 2012914,
+      "issuance30dEth": 85309,
+      "issuanceGrossPerYrEth": 1042050,
       "deflationary": false,
       "supplySeries": [
         {
@@ -3376,11 +3376,11 @@
           "v": 121842010
         },
         {
-          "t": 1784013731000,
-          "v": 121862703
+          "t": 1784047271000,
+          "v": 121863788
         }
       ],
-      "asOf": "2026-07-14T07:24:03.046Z",
+      "asOf": "2026-07-14T16:43:02.854Z",
       "stale": false
     },
     "fees": {
@@ -4147,25 +4147,25 @@
           }
         ]
       },
-      "asOf": "2026-07-14T07:24:03.046Z",
+      "asOf": "2026-07-14T16:43:02.854Z",
       "stale": false
     },
     "l2": {
-      "totalTvlUsd": 34011454336,
-      "asOfTs": 1784008800,
-      "asOf": "2026-07-14T07:24:03.046Z",
+      "totalTvlUsd": 34737535559,
+      "asOfTs": 1784041200,
+      "asOf": "2026-07-14T16:43:02.854Z",
       "stale": false
     },
     "restaking": {
-      "totalUsd": 5157399087,
+      "totalUsd": 5404927334,
       "byProtocol": {
-        "eigenlayer": 4834140881,
-        "symbiotic": 316826565,
-        "karak": 6431641
+        "eigenlayer": 5076656477,
+        "symbiotic": 321566823,
+        "karak": 6704034
       },
-      "asOf": "2026-07-14T07:24:03.046Z",
+      "asOf": "2026-07-14T16:43:02.854Z",
       "stale": false,
-      "restakedEth": 2896374,
+      "restakedEth": 2884813,
       "restakedToStakedPct": 7.1
     }
   },
