@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-07-17T02:12:53.875Z",
+  "generatedUtc": "2026-07-17T08:02:10.306Z",
   "meta": {
     "sources": [
       {
@@ -7,47 +7,7 @@
         "label": "DefiLlama Stablecoins",
         "url": "https://defillama.com/stablecoins",
         "ok": true,
-        "asOf": "2026-07-17T02:12:53.875Z",
-        "error": null
-      },
-      {
-        "key": "defillama_rwa",
-        "label": "DefiLlama RWA",
-        "url": "https://defillama.com/protocols/RWA",
-        "ok": true,
-        "asOf": "2026-07-17T02:12:53.875Z",
-        "error": null
-      },
-      {
-        "key": "coingecko",
-        "label": "CoinGecko",
-        "url": "https://www.coingecko.com/en/coins/ethereum",
-        "ok": true,
-        "asOf": "2026-07-17T02:12:53.875Z",
-        "error": null
-      },
-      {
-        "key": "growthepie",
-        "label": "growthepie.xyz",
-        "url": "https://www.growthepie.xyz",
-        "ok": true,
-        "asOf": "2026-07-17T02:12:53.875Z",
-        "error": null
-      },
-      {
-        "key": "l2beat",
-        "label": "L2BEAT",
-        "url": "https://l2beat.com",
-        "ok": true,
-        "asOf": "2026-07-17T02:12:53.875Z",
-        "error": null
-      },
-      {
-        "key": "defillama_restaking",
-        "label": "DefiLlama Restaking",
-        "url": "https://defillama.com/protocols/Restaking",
-        "ok": true,
-        "asOf": "2026-07-17T02:12:53.875Z",
+        "asOf": "2026-07-17T08:02:10.306Z",
         "error": null
       },
       {
@@ -55,7 +15,47 @@
         "label": "DefiLlama Chains",
         "url": "https://defillama.com/chains",
         "ok": true,
-        "asOf": "2026-07-17T02:12:53.875Z",
+        "asOf": "2026-07-17T08:02:10.306Z",
+        "error": null
+      },
+      {
+        "key": "coingecko",
+        "label": "CoinGecko",
+        "url": "https://www.coingecko.com/en/coins/ethereum",
+        "ok": true,
+        "asOf": "2026-07-17T08:02:10.306Z",
+        "error": null
+      },
+      {
+        "key": "growthepie",
+        "label": "growthepie.xyz",
+        "url": "https://www.growthepie.xyz",
+        "ok": true,
+        "asOf": "2026-07-17T08:02:10.306Z",
+        "error": null
+      },
+      {
+        "key": "defillama_rwa",
+        "label": "DefiLlama RWA",
+        "url": "https://defillama.com/protocols/RWA",
+        "ok": true,
+        "asOf": "2026-07-17T08:02:10.306Z",
+        "error": null
+      },
+      {
+        "key": "l2beat",
+        "label": "L2BEAT",
+        "url": "https://l2beat.com",
+        "ok": true,
+        "asOf": "2026-07-17T08:02:10.306Z",
+        "error": null
+      },
+      {
+        "key": "defillama_restaking",
+        "label": "DefiLlama Restaking",
+        "url": "https://defillama.com/protocols/Restaking",
+        "ok": true,
+        "asOf": "2026-07-17T08:02:10.306Z",
         "error": null
       },
       {
@@ -63,7 +63,7 @@
         "label": "ultrasound.money",
         "url": "https://ultrasound.money",
         "ok": true,
-        "asOf": "2026-07-17T02:12:53.875Z",
+        "asOf": "2026-07-17T08:02:10.306Z",
         "error": null
       },
       {
@@ -71,7 +71,7 @@
         "label": "DefiLlama + Morpho API (Aave/Morpho/Sky)",
         "url": "https://defillama.com/protocol/aave-v3",
         "ok": true,
-        "asOf": "2026-07-17T02:12:53.875Z",
+        "asOf": "2026-07-17T08:02:10.306Z",
         "error": null
       }
     ],
@@ -91,8 +91,8 @@
         },
         "score": 0.5,
         "lit": true,
-        "valueText": "ETH-system NET collateral 54.0% · share -0.8pp over tracked window · drawdown from peak −63%",
-        "detail": "Holding under stress — amid the current −63% drawdown the ETH-system NET collateral share is -0.8pp (within ≤5pp). The no-delist / LTV-cut leg is still pending (manual, unset).",
+        "valueText": "ETH-system NET collateral 53.8% · share -1pp over tracked window · drawdown from peak −63%",
+        "detail": "Holding under stress — amid the current −63% drawdown the ETH-system NET collateral share is -1pp (within ≤5pp). The no-delist / LTV-cut leg is still pending (manual, unset).",
         "reverse": false,
         "feedBroken": false,
         "stressActive": true
@@ -109,8 +109,8 @@
         },
         "score": 0.5,
         "lit": true,
-        "valueText": "2.91M ETH restaked · 7.1% of staked ETH",
-        "detail": "2.91M ETH restaked (EigenLayer+Symbiotic+Karak, ETH-denominated). Lights at ≥5M; ≥1M = partial. NB: headline TVL over-reads real demand (points-farming, LST double-count, non-live-slashing AVSs).",
+        "valueText": "2.88M ETH restaked · 7% of staked ETH",
+        "detail": "2.88M ETH restaked (EigenLayer+Symbiotic+Karak, ETH-denominated). Lights at ≥5M; ≥1M = partial. NB: headline TVL over-reads real demand (points-farming, LST double-count, non-live-slashing AVSs).",
         "reverse": false,
         "feedBroken": false,
         "stressActive": false
@@ -127,7 +127,7 @@
         },
         "score": 0,
         "lit": false,
-        "valueText": "RV365 66% (≥50%) · RV30 46% · ETH max-LTV 86% (+0pp)",
+        "valueText": "RV365 66% (≥50%) · RV30 47% · ETH max-LTV 86% (+0pp)",
         "detail": "Vol leg — trailing-365d realized vol <50% for ≥2 quarters: not met. On-chain haircut leg — ETH max-LTV (Aave/Morpho) compressing the haircut: not compressing · current haircut ≈ 14%.",
         "reverse": false,
         "feedStatus": "ok",
@@ -150,14 +150,14 @@
   },
   "auto": {
     "eth": {
-      "price": 1847.42,
-      "mcap": 222874403235,
-      "change24hPct": -3.72,
+      "price": 1827.54,
+      "mcap": 220446758114,
+      "change24hPct": -4.21,
       "ath": 4946.05,
-      "athChangePct": -62.6,
+      "athChangePct": -63.1,
       "circulating": 120682873.2112472,
-      "drawdownFromPeakPct": 62.6,
-      "drawdownFrom365dHighPct": 61.7,
+      "drawdownFromPeakPct": 63.1,
+      "drawdownFrom365dHighPct": 62.2,
       "priceSeries": [
         {
           "t": 1752796800000,
@@ -720,17 +720,17 @@
           "v": 1917.35
         },
         {
-          "t": 1784254343000,
-          "v": 1846.83
+          "t": 1784275304000,
+          "v": 1827.42
         }
       ]
     },
     "btc": {
-      "price": 63445,
-      "mcap": 1272288905927
+      "price": 62752,
+      "mcap": 1258601693421
     },
     "ratio": {
-      "now": 0.029118,
+      "now": 0.029123,
       "series": [
         {
           "t": 1752796800000,
@@ -1293,13 +1293,13 @@
           "v": 0.029624
         },
         {
-          "t": 1784254343000,
-          "v": 0.029109
+          "t": 1784275304000,
+          "v": 0.029123
         }
       ]
     },
     "vol": {
-      "d30Pct": 46.3,
+      "d30Pct": 46.8,
       "d365Pct": 66.4,
       "quartersUnder50": 1,
       "quarterVols": [
@@ -1870,13 +1870,13 @@
           "v": 47.5
         },
         {
-          "t": 1784254343000,
+          "t": 1784275304000,
           "v": 47.1
         }
       ]
     },
     "correlation": {
-      "now": 0.8804,
+      "now": 0.8809,
       "series": [
         {
           "t": 1760572800000,
@@ -2439,21 +2439,21 @@
           "v": 0.8814
         },
         {
-          "t": 1784254343000,
-          "v": 0.8804
+          "t": 1784275304000,
+          "v": 0.8809
         }
       ]
     },
     "_market": {
-      "asOf": "2026-07-17T02:12:53.875Z",
+      "asOf": "2026-07-17T08:02:10.306Z",
       "stale": false
     },
     "collateral": {
-      "combinedEthSharePct": 54,
-      "combinedStableSharePct": 11.1,
-      "combinedEthShareDeltaPp": -0.8,
+      "combinedEthSharePct": 53.8,
+      "combinedStableSharePct": 11.2,
+      "combinedEthShareDeltaPp": -1,
       "driftWindowMonths": 18,
-      "combinedTotalUsd": 15161177241,
+      "combinedTotalUsd": 14944473647,
       "ethMaxLltvPct": 86,
       "ethMaxLltvStatus": "ok",
       "venuesUsed": [
@@ -2468,21 +2468,21 @@
           "name": "Aave",
           "slug": "aave-v3",
           "basis": "DL net",
-          "totalUsd": 11143214103,
-          "ethSharePct": 53
+          "totalUsd": 10970572212,
+          "ethSharePct": 52.8
         },
         {
           "name": "Morpho",
           "slug": "morpho-blue",
           "basis": "API net (rule B)",
-          "totalUsd": 2479311471,
+          "totalUsd": 2465714588,
           "ethSharePct": 31.1
         },
         {
           "name": "Sky",
           "slug": "makerdao",
           "basis": "vault collateral (PSM excluded)",
-          "totalUsd": 1538651667,
+          "totalUsd": 1508186846,
           "ethSharePct": 98.6
         }
       ],
@@ -2491,13 +2491,13 @@
           "t": 1740700800000,
           "ethPct": 54.8,
           "stablePct": 16.1,
-          "btcPct": 25.4
+          "btcPct": 25.3
         },
         {
           "t": 1743379200000,
           "ethPct": 54.5,
           "stablePct": 11.8,
-          "btcPct": 30.1
+          "btcPct": 30
         },
         {
           "t": 1745971200000,
@@ -2509,7 +2509,7 @@
           "t": 1748649600000,
           "ethPct": 56.1,
           "stablePct": 12.1,
-          "btcPct": 28.7
+          "btcPct": 28.6
         },
         {
           "t": 1751241600000,
@@ -2519,7 +2519,7 @@
         },
         {
           "t": 1753920000000,
-          "ethPct": 56.6,
+          "ethPct": 56.7,
           "stablePct": 15.9,
           "btcPct": 24.8
         },
@@ -2531,19 +2531,19 @@
         },
         {
           "t": 1759190400000,
-          "ethPct": 58,
+          "ethPct": 58.1,
           "stablePct": 17.4,
-          "btcPct": 21.6
+          "btcPct": 21.5
         },
         {
           "t": 1761868800000,
           "ethPct": 55.4,
           "stablePct": 17.7,
-          "btcPct": 23.5
+          "btcPct": 23.4
         },
         {
           "t": 1764460800000,
-          "ethPct": 55.8,
+          "ethPct": 55.9,
           "stablePct": 17.7,
           "btcPct": 24.2
         },
@@ -2555,313 +2555,313 @@
         },
         {
           "t": 1769817600000,
-          "ethPct": 57.4,
+          "ethPct": 57.5,
           "stablePct": 17.3,
-          "btcPct": 22.8
+          "btcPct": 22.7
         },
         {
           "t": 1772236800000,
           "ethPct": 47.9,
           "stablePct": 25.7,
-          "btcPct": 24
+          "btcPct": 23.9
         },
         {
           "t": 1774915200000,
           "ethPct": 53.1,
-          "stablePct": 19.6,
+          "stablePct": 19.7,
           "btcPct": 24.7
         },
         {
           "t": 1777507200000,
           "ethPct": 61.4,
-          "stablePct": 6,
+          "stablePct": 6.1,
           "btcPct": 28.9
         },
         {
           "t": 1780185600000,
-          "ethPct": 54.1,
+          "ethPct": 54.2,
           "stablePct": 9.6,
-          "btcPct": 33.4
+          "btcPct": 33.3
         },
         {
           "t": 1782777600000,
           "ethPct": 52,
           "stablePct": 11.6,
-          "btcPct": 33.4
+          "btcPct": 33.3
         },
         {
           "t": 1785456000000,
-          "ethPct": 54,
-          "stablePct": 11.1,
+          "ethPct": 53.8,
+          "stablePct": 11.2,
           "btcPct": 32.1
         }
       ],
-      "asOf": "2026-07-17T02:12:53.875Z",
+      "asOf": "2026-07-17T08:02:10.306Z",
       "stale": false,
       "ethMaxLltvDeltaPp": 0
     },
     "stablecoins": {
-      "totalUsd": 301759263104,
-      "ethUsd": 148895892359,
-      "ethSharePct": 49.3,
-      "ethAlignedUsd": 162359016189,
-      "ethAlignedSharePct": 53.8,
-      "ethAlignedSharePctBroad": 53.8,
-      "ethAlignedSharePctStrict": 52.5,
+      "totalUsd": 301977961274,
+      "ethUsd": 149268758969,
+      "ethSharePct": 49.4,
+      "ethAlignedUsd": 162688055895,
+      "ethAlignedSharePct": 53.9,
+      "ethAlignedSharePctBroad": 53.9,
+      "ethAlignedSharePctStrict": 52.6,
       "ethAlignedBroadMinusStrictPp": 1.3,
       "byChain": [
         {
           "name": "Ethereum",
-          "usd": 148895892359,
-          "sharePct": 49.3
+          "usd": 149268758969,
+          "sharePct": 49.4
         },
         {
           "name": "Tron",
-          "usd": 91097866724,
+          "usd": 91089138049,
           "sharePct": 30.2
         },
         {
           "name": "Solana",
-          "usd": 14716647858,
+          "usd": 14688057140,
           "sharePct": 4.9
         },
         {
           "name": "BSC",
-          "usd": 14067741292,
+          "usd": 14062860924,
           "sharePct": 4.7
         },
         {
           "name": "Hyperliquid L1",
-          "usd": 6322710419,
+          "usd": 6284490804,
           "sharePct": 2.1
         },
         {
           "name": "Base",
-          "usd": 4836518908,
+          "usd": 4811611344,
           "sharePct": 1.6
         },
         {
           "name": "Arbitrum",
-          "usd": 3761782998,
+          "usd": 3751451720,
           "sharePct": 1.2
         },
         {
           "name": "Polygon",
-          "usd": 3361145891,
+          "usd": 3353050277,
           "sharePct": 1.1
         }
       ],
-      "asOf": "2026-07-17T02:12:53.875Z",
+      "asOf": "2026-07-17T08:02:10.306Z",
       "stale": false
     },
     "chains": {
-      "ethTvl": 40803416704,
-      "solanaTvl": 4848900843,
-      "totalTvl": 75331679868,
-      "ethSharePct": 54.2,
+      "ethTvl": 40307752334,
+      "solanaTvl": 4800922272,
+      "totalTvl": 74521630577,
+      "ethSharePct": 54.1,
       "solanaSharePct": 6.4,
       "ethDexVolSharePct": 14.7,
       "solDexVolSharePct": 30.3,
       "dexVolWindow": "30d",
-      "dexVolTotal30dUsd": 202644077240,
-      "ethDexVol30dUsd": 29741334701,
-      "solDexVol30dUsd": 61319782262,
-      "asOf": "2026-07-17T02:12:53.875Z",
+      "dexVolTotal30dUsd": 202644428330,
+      "ethDexVol30dUsd": 29741288421,
+      "solDexVol30dUsd": 61319789750,
+      "asOf": "2026-07-17T08:02:10.306Z",
       "stale": false
     },
     "rwa": {
-      "totalUsd": 25272948814,
-      "ethUsd": 13369486312,
+      "totalUsd": 25269809832,
+      "ethUsd": 13373327671,
       "ethSharePct": 52.9,
       "ethAlignedSharePctBroad": 60.8,
-      "ethAlignedSharePctStrict": 59.6,
-      "ethAlignedBroadMinusStrictPp": 1.2,
+      "ethAlignedSharePctStrict": 59.7,
+      "ethAlignedBroadMinusStrictPp": 1.1,
       "byChain": [
         {
           "name": "Ethereum",
-          "usd": 13369486312,
+          "usd": 13373327671,
           "sharePct": 52.9
         },
         {
           "name": "Binance",
-          "usd": 3619161161,
+          "usd": 3614896214,
           "sharePct": 14.3
         },
         {
           "name": "Avalanche",
-          "usd": 1509010474,
+          "usd": 1509063339,
           "sharePct": 6
         },
         {
           "name": "Solana",
-          "usd": 1400364202,
+          "usd": 1396117262,
           "sharePct": 5.5
         },
         {
           "name": "Stellar",
-          "usd": 1083319580,
+          "usd": 1084433143,
           "sharePct": 4.3
         },
         {
           "name": "zkSync Era",
-          "usd": 985454785,
+          "usd": 985454791,
           "sharePct": 3.9
         },
         {
           "name": "Aptos",
-          "usd": 858320716,
+          "usd": 858339988,
           "sharePct": 3.4
         },
         {
           "name": "Arbitrum",
-          "usd": 531413369,
+          "usd": 531303729,
           "sharePct": 2.1
         }
       ],
-      "asOf": "2026-07-17T02:12:53.875Z",
+      "asOf": "2026-07-17T08:02:10.306Z",
       "stale": false
     },
     "supply": {
-      "totalSupplyEth": 121870599,
-      "stakedEth": 40888717,
-      "stakedEffectiveEth": 40732543,
+      "totalSupplyEth": 121871285,
+      "stakedEth": 40901401,
+      "stakedEffectiveEth": 40744592,
       "stakingPct": 33.6,
-      "net30dEth": 84224,
-      "net7dEth": 19851,
-      "sinceMergeEth": 1349458,
+      "net30dEth": 84235,
+      "net7dEth": 19854,
+      "sinceMergeEth": 1350245,
       "burn30dEth": 1190,
-      "burnSinceMergeEth": 2012996,
-      "issuance30dEth": 85413,
-      "issuanceGrossPerYrEth": 1043750,
+      "burnSinceMergeEth": 2013002,
+      "issuance30dEth": 85425,
+      "issuanceGrossPerYrEth": 1043982,
       "deflationary": false,
       "supplySeries": [
         {
           "t": 1663200000000,
-          "v": 120521141
+          "v": 120521039
         },
         {
           "t": 1663891200000,
-          "v": 120526018
+          "v": 120526078
         },
         {
           "t": 1664668800000,
-          "v": 120530658
+          "v": 120530999
         },
         {
           "t": 1665446400000,
-          "v": 120530028
+          "v": 120529844
         },
         {
           "t": 1666224000000,
-          "v": 120525896
+          "v": 120524465
         },
         {
           "t": 1666915200000,
-          "v": 120522213
+          "v": 120522339
         },
         {
           "t": 1667692800000,
-          "v": 120523611
+          "v": 120524030
         },
         {
           "t": 1668470400000,
-          "v": 120515239
+          "v": 120515092
         },
         {
           "t": 1669248000000,
-          "v": 120517287
+          "v": 120517618
         },
         {
           "t": 1669939200000,
-          "v": 120521491
+          "v": 120521887
         },
         {
           "t": 1670716800000,
-          "v": 120522332
+          "v": 120522452
         },
         {
           "t": 1671494400000,
-          "v": 120523014
+          "v": 120523126
         },
         {
           "t": 1672272000000,
-          "v": 120525850
+          "v": 120525905
         },
         {
           "t": 1672963200000,
-          "v": 120525300
+          "v": 120525032
         },
         {
           "t": 1673740800000,
-          "v": 120521354
+          "v": 120521129
         },
         {
           "t": 1674518400000,
-          "v": 120518295
+          "v": 120517900
         },
         {
           "t": 1675296000000,
-          "v": 120514827
+          "v": 120514343
         },
         {
           "t": 1675987200000,
-          "v": 120505738
+          "v": 120505013
         },
         {
           "t": 1676764800000,
-          "v": 120492816
+          "v": 120492240
         },
         {
           "t": 1677542400000,
-          "v": 120482095
+          "v": 120482043
         },
         {
           "t": 1678320000000,
-          "v": 120471209
+          "v": 120470880
         },
         {
           "t": 1679011200000,
-          "v": 120455234
+          "v": 120454974
         },
         {
           "t": 1679788800000,
-          "v": 120452686
+          "v": 120452716
         },
         {
           "t": 1680566400000,
-          "v": 120444875
+          "v": 120444254
         },
         {
           "t": 1681516800000,
-          "v": 120433829
+          "v": 120433605
         },
         {
           "t": 1682208000000,
-          "v": 120412554
+          "v": 120410137
         },
         {
           "t": 1682985600000,
-          "v": 120389147
+          "v": 120384795
         },
         {
           "t": 1683763200000,
-          "v": 120310100
+          "v": 120310099
         },
         {
           "t": 1684540800000,
-          "v": 120273219
+          "v": 120271601
         },
         {
           "t": 1685232000000,
-          "v": 120256469
+          "v": 120256327
         },
         {
           "t": 1686009600000,
-          "v": 120241762
+          "v": 120241667
         },
         {
           "t": 1686787200000,
-          "v": 120238831
+          "v": 120238750
         },
         {
           "t": 1687564800000,
@@ -2869,455 +2869,455 @@
         },
         {
           "t": 1688256000000,
-          "v": 120238404
+          "v": 120238436
         },
         {
           "t": 1689033600000,
-          "v": 120231022
+          "v": 120230729
         },
         {
           "t": 1689811200000,
-          "v": 120227092
+          "v": 120227150
         },
         {
           "t": 1690588800000,
-          "v": 120219578
+          "v": 120219589
         },
         {
           "t": 1691280000000,
-          "v": 120218420
+          "v": 120218884
         },
         {
           "t": 1692057600000,
-          "v": 120219018
+          "v": 120219026
         },
         {
           "t": 1692835200000,
-          "v": 120214380
+          "v": 120214466
         },
         {
           "t": 1693612800000,
-          "v": 120213811
+          "v": 120214466
         },
         {
           "t": 1694304000000,
-          "v": 120218563
+          "v": 120219126
         },
         {
           "t": 1695081600000,
-          "v": 120224218
+          "v": 120224445
         },
         {
           "t": 1695859200000,
-          "v": 120232851
+          "v": 120232951
         },
         {
           "t": 1696636800000,
-          "v": 120243779
+          "v": 120245107
         },
         {
           "t": 1697328000000,
-          "v": 120255998
+          "v": 120256544
         },
         {
           "t": 1698105600000,
-          "v": 120266643
+          "v": 120266433
         },
         {
           "t": 1698883200000,
-          "v": 120266706
+          "v": 120266544
         },
         {
           "t": 1699660800000,
-          "v": 120259660
+          "v": 120259466
         },
         {
           "t": 1700352000000,
-          "v": 120250597
+          "v": 120250732
         },
         {
           "t": 1701129600000,
-          "v": 120241740
+          "v": 120241309
         },
         {
           "t": 1701907200000,
-          "v": 120220856
+          "v": 120219355
         },
         {
           "t": 1702684800000,
-          "v": 120200752
+          "v": 120197997
         },
         {
           "t": 1703376000000,
-          "v": 120181672
+          "v": 120181722
         },
         {
           "t": 1704153600000,
-          "v": 120182976
+          "v": 120183314
         },
         {
           "t": 1704931200000,
-          "v": 120180357
+          "v": 120180253
         },
         {
           "t": 1705708800000,
-          "v": 120172274
+          "v": 120172516
         },
         {
           "t": 1706400000000,
-          "v": 120177219
+          "v": 120177433
         },
         {
           "t": 1707177600000,
-          "v": 120179571
+          "v": 120179605
         },
         {
           "t": 1707955200000,
-          "v": 120162855
+          "v": 120161733
         },
         {
           "t": 1708732800000,
-          "v": 120152482
+          "v": 120152451
         },
         {
           "t": 1709424000000,
-          "v": 120132114
+          "v": 120130243
         },
         {
           "t": 1710201600000,
-          "v": 120089487
+          "v": 120088113
         },
         {
           "t": 1710979200000,
-          "v": 120070317
+          "v": 120070128
         },
         {
           "t": 1711756800000,
-          "v": 120066279
+          "v": 120066328
         },
         {
           "t": 1712448000000,
-          "v": 120064587
+          "v": 120065079
         },
         {
           "t": 1713225600000,
-          "v": 120065396
+          "v": 120065424
         },
         {
           "t": 1714003200000,
-          "v": 120076496
+          "v": 120077110
         },
         {
           "t": 1714780800000,
-          "v": 120090654
+          "v": 120092096
         },
         {
           "t": 1715558400000,
-          "v": 120109284
+          "v": 120109325
         },
         {
           "t": 1716336000000,
-          "v": 120123372
+          "v": 120123560
         },
         {
           "t": 1717113600000,
-          "v": 120135679
+          "v": 120136793
         },
         {
           "t": 1717891200000,
-          "v": 120147102
+          "v": 120148339
         },
         {
           "t": 1718582400000,
-          "v": 120159209
+          "v": 120160756
         },
         {
           "t": 1719360000000,
-          "v": 120176010
+          "v": 120176772
         },
         {
           "t": 1720137600000,
-          "v": 120193937
+          "v": 120195178
         },
         {
           "t": 1720915200000,
-          "v": 120212737
+          "v": 120212798
         },
         {
           "t": 1721606400000,
-          "v": 120227273
+          "v": 120228925
         },
         {
           "t": 1722384000000,
-          "v": 120246591
+          "v": 120247814
         },
         {
           "t": 1723161600000,
-          "v": 120260263
+          "v": 120261567
         },
         {
           "t": 1723939200000,
-          "v": 120281109
+          "v": 120281419
         },
         {
           "t": 1724630400000,
-          "v": 120300532
+          "v": 120302806
         },
         {
           "t": 1725408000000,
-          "v": 120322090
+          "v": 120323576
         },
         {
           "t": 1726185600000,
-          "v": 120341829
+          "v": 120343633
         },
         {
           "t": 1726963200000,
-          "v": 120357362
+          "v": 120358136
         },
         {
           "t": 1727654400000,
-          "v": 120365071
+          "v": 120365660
         },
         {
           "t": 1728432000000,
-          "v": 120377116
+          "v": 120377343
         },
         {
           "t": 1729209600000,
-          "v": 120385023
+          "v": 120384859
         },
         {
           "t": 1729987200000,
-          "v": 120398333
+          "v": 120398342
         },
         {
           "t": 1730678400000,
-          "v": 120412074
+          "v": 120412795
         },
         {
           "t": 1731456000000,
-          "v": 120420280
+          "v": 120418146
         },
         {
           "t": 1732233600000,
-          "v": 120425297
+          "v": 120425613
         },
         {
           "t": 1733011200000,
-          "v": 120437626
+          "v": 120437756
         },
         {
           "t": 1733702400000,
-          "v": 120441519
+          "v": 120441841
         },
         {
           "t": 1734480000000,
-          "v": 120448161
+          "v": 120448910
         },
         {
           "t": 1735257600000,
-          "v": 120460350
+          "v": 120461872
         },
         {
           "t": 1736035200000,
-          "v": 120473930
+          "v": 120473974
         },
         {
           "t": 1736726400000,
-          "v": 120488260
+          "v": 120488988
         },
         {
           "t": 1737504000000,
-          "v": 120496444
+          "v": 120496674
         },
         {
           "t": 1738281600000,
-          "v": 120513065
+          "v": 120514403
         },
         {
           "t": 1739059200000,
-          "v": 120530243
+          "v": 120531882
         },
         {
           "t": 1739750400000,
-          "v": 120549531
+          "v": 120549761
         },
         {
           "t": 1740528000000,
-          "v": 120570153
+          "v": 120572414
         },
         {
           "t": 1741305600000,
-          "v": 120591528
+          "v": 120592483
         },
         {
           "t": 1742083200000,
-          "v": 120613247
+          "v": 120613571
         },
         {
           "t": 1742774400000,
-          "v": 120633361
+          "v": 120635476
         },
         {
           "t": 1743552000000,
-          "v": 120656018
+          "v": 120656763
         },
         {
           "t": 1744329600000,
-          "v": 120677031
+          "v": 120677959
         },
         {
           "t": 1745107200000,
-          "v": 120699538
+          "v": 120700680
         },
         {
           "t": 1745798400000,
-          "v": 120718990
+          "v": 120721316
         },
         {
           "t": 1746576000000,
-          "v": 120741586
+          "v": 120741672
         },
         {
           "t": 1747353600000,
-          "v": 120760163
+          "v": 120762457
         },
         {
           "t": 1748131200000,
-          "v": 120781540
+          "v": 120781810
         },
         {
           "t": 1748822400000,
-          "v": 120800113
+          "v": 120800795
         },
         {
           "t": 1749600000000,
-          "v": 120820760
+          "v": 120820854
         },
         {
           "t": 1750377600000,
-          "v": 120842546
+          "v": 120844136
         },
         {
           "t": 1751155200000,
-          "v": 120863868
+          "v": 120864064
         },
         {
           "t": 1751846400000,
-          "v": 120884140
+          "v": 120886433
         },
         {
           "t": 1752624000000,
-          "v": 120905443
+          "v": 120906653
         },
         {
           "t": 1753401600000,
-          "v": 120926270
+          "v": 120926685
         },
         {
           "t": 1754179200000,
-          "v": 120948794
+          "v": 120949060
         },
         {
           "t": 1754870400000,
-          "v": 120969405
+          "v": 120971701
         },
         {
           "t": 1755648000000,
-          "v": 120992119
+          "v": 120992166
         },
         {
           "t": 1756425600000,
-          "v": 121015107
+          "v": 121015434
         },
         {
           "t": 1757203200000,
-          "v": 121037495
+          "v": 121039088
         },
         {
           "t": 1757894400000,
-          "v": 121058276
+          "v": 121059952
         },
         {
           "t": 1758672000000,
-          "v": 121081315
+          "v": 121082015
         },
         {
           "t": 1759449600000,
-          "v": 121104079
+          "v": 121104348
         },
         {
           "t": 1760227200000,
-          "v": 121124658
+          "v": 121125391
         },
         {
           "t": 1760918400000,
-          "v": 121145236
+          "v": 121145294
         },
         {
           "t": 1761696000000,
-          "v": 121168777
+          "v": 121169094
         },
         {
           "t": 1762473600000,
-          "v": 121191446
+          "v": 121191901
         },
         {
           "t": 1763251200000,
-          "v": 121214818
+          "v": 121215678
         },
         {
           "t": 1763942400000,
-          "v": 121235488
+          "v": 121236136
         },
         {
           "t": 1764720000000,
-          "v": 121259229
+          "v": 121260302
         },
         {
           "t": 1765497600000,
-          "v": 121282273
+          "v": 121284414
         },
         {
           "t": 1766275200000,
-          "v": 121306110
+          "v": 121306301
         },
         {
           "t": 1766966400000,
-          "v": 121327428
+          "v": 121329678
         },
         {
           "t": 1767744000000,
-          "v": 121351384
+          "v": 121353204
         },
         {
           "t": 1768521600000,
-          "v": 121375344
+          "v": 121376060
         },
         {
           "t": 1769299200000,
-          "v": 121399448
+          "v": 121400792
         },
         {
           "t": 1769990400000,
-          "v": 121420453
+          "v": 121422908
         },
         {
           "t": 1770768000000,
-          "v": 121443616
+          "v": 121443937
         },
         {
           "t": 1771545600000,
-          "v": 121467934
+          "v": 121469494
         },
         {
           "t": 1772323200000,
-          "v": 121492392
+          "v": 121492551
         },
         {
           "t": 1773014400000,
-          "v": 121514090
+          "v": 121516773
         },
         {
           "t": 1773792000000,
@@ -3333,11 +3333,11 @@
         },
         {
           "t": 1776038400000,
-          "v": 121610282
+          "v": 121611555
         },
         {
           "t": 1776816000000,
-          "v": 121634484
+          "v": 121636725
         },
         {
           "t": 1777593600000,
@@ -3357,15 +3357,15 @@
         },
         {
           "t": 1780617600000,
-          "v": 121753012
+          "v": 121753023
         },
         {
           "t": 1781395200000,
-          "v": 121777768
+          "v": 121779085
         },
         {
           "t": 1782086400000,
-          "v": 121800071
+          "v": 121800072
         },
         {
           "t": 1782864000000,
@@ -3376,24 +3376,20 @@
           "v": 121850485
         },
         {
-          "t": 1784254355000,
-          "v": 121870599
+          "t": 1784275283000,
+          "v": 121871285
         }
       ],
-      "asOf": "2026-07-17T02:12:53.875Z",
+      "asOf": "2026-07-17T08:02:10.306Z",
       "stale": false
     },
     "fees": {
-      "l1FeesLatestUsd": 252484,
-      "l1PlusBlobLatestUsd": 252566,
-      "l1Fees30dAvgUsd": 271992,
-      "l1PlusBlob30dAvgUsd": 272071,
+      "l1FeesLatestUsd": 262597,
+      "l1PlusBlobLatestUsd": 262689,
+      "l1Fees30dAvgUsd": 270274,
+      "l1PlusBlob30dAvgUsd": 270353,
       "blobRev30dAvgUsd": 79,
       "l1FeesSeries": [
-        {
-          "t": "2026-04-17",
-          "v": 1016753
-        },
         {
           "t": "2026-04-18",
           "v": 1208605
@@ -3749,13 +3745,13 @@
         {
           "t": "2026-07-15",
           "v": 252484
+        },
+        {
+          "t": "2026-07-16",
+          "v": 262597
         }
       ],
       "l1PlusBlobSeries": [
-        {
-          "t": "2026-04-17",
-          "v": 1017015
-        },
         {
           "t": "2026-04-18",
           "v": 1208849
@@ -4111,12 +4107,16 @@
         {
           "t": "2026-07-15",
           "v": 252566
+        },
+        {
+          "t": "2026-07-16",
+          "v": 262689
         }
       ],
-      "blobRevLatestUsd": 82,
+      "blobRevLatestUsd": 92,
       "takeRatePctPerYr": 0.061,
-      "onchainValueUsd": 163315650762,
-      "ethStablesMcapUsd": 163315650762,
+      "onchainValueUsd": 162811198277,
+      "ethStablesMcapUsd": 162811198277,
       "l2PaidToL1": {
         "currentRatioPct": 0.49,
         "top5RatioPct": 0.3,
@@ -4131,7 +4131,7 @@
         "series": [
           {
             "t": "2026-04",
-            "v": 1.48
+            "v": 1.53
           },
           {
             "t": "2026-05",
@@ -4147,26 +4147,26 @@
           }
         ]
       },
-      "asOf": "2026-07-17T02:12:53.875Z",
+      "asOf": "2026-07-17T08:02:10.306Z",
       "stale": false
     },
     "l2": {
-      "totalTvlUsd": 34459378775,
-      "asOfTs": 1784246400,
-      "asOf": "2026-07-17T02:12:53.875Z",
+      "totalTvlUsd": 34122894184,
+      "asOfTs": 1784268000,
+      "asOf": "2026-07-17T08:02:10.306Z",
       "stale": false
     },
     "restaking": {
-      "totalUsd": 5369664543,
+      "totalUsd": 5263283524,
       "byProtocol": {
-        "eigenlayer": 5042358478,
-        "symbiotic": 320636885,
-        "karak": 6669181
+        "eigenlayer": 4941253792,
+        "symbiotic": 315475405,
+        "karak": 6554327
       },
-      "asOf": "2026-07-17T02:12:53.875Z",
+      "asOf": "2026-07-17T08:02:10.306Z",
       "stale": false,
-      "restakedEth": 2906575,
-      "restakedToStakedPct": 7.1
+      "restakedEth": 2879983,
+      "restakedToStakedPct": 7
     }
   },
   "manual": {
