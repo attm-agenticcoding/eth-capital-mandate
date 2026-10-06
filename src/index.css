@@ -119,7 +119,7 @@ button { color: inherit; }
 .badge-neutral { color: #969887; background: #f3f3ed; }
 .badge-amber { color: #a1844d; background: #faf4e8; }
 .badge-red { color: #b06a58; background: #fcf0eb; }
-.research-section { scroll-margin-top: 94px; margin-top: 50px; }
+.research-section { scroll-margin-top: 0; margin-top: 50px; }
 .section-heading { display: flex; align-items: center; gap: 15px; }
 .section-marker { height: 45px; width: 45px; flex-shrink: 0; display: grid; place-items: center; border-radius: 3px; border: 1px solid #d8e3d5; background: #edf3e9; color: #628157; }
 .section-blue .section-marker { background: #edf1f5; color: #69859d; border-color: #dde5eb; }
@@ -178,7 +178,7 @@ button { color: inherit; }
 .section-intro .context-boundary { color: #818d76; font-size: 10px; margin-top: 8px; }
 .metric-context { background: #fdfefb; }
 .metric-context .metric-number { font-size: 30px; color: #526649; }
-.methodology-section { border-top: 1px solid #dce3d4; margin-top: 60px; padding-top: 38px; scroll-margin-top: 94px; }
+.methodology-section { border-top: 1px solid #dce3d4; margin-top: 60px; padding-top: 38px; scroll-margin-top: 0; }
 .methodology-section > .section-heading .section-marker { background: #eaeee3; border-color: #dce3d2; }
 .methodology-section > .section-heading h2 { font-size: 20px; }
 .methodology-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 58px; padding-top: 27px; }
@@ -297,7 +297,7 @@ button { color: inherit; }
   .methodology-columns { gap: 28px; }
   .research-backlog { grid-template-columns: 1fr; gap: 22px; padding: 23px; }
   .backlog-heading p { max-width: none; margin-top: 8px; }
-  .research-section, .methodology-section { scroll-margin-top: 120px; }
+  .research-section, .methodology-section { scroll-margin-top: 0; }
 }
 
 @media (max-width: 600px) {
@@ -505,3 +505,7 @@ button { color: inherit; }
 .source-link { text-underline-offset: 3px; }
 .metric-time-block { min-width: 0; }
 .metric-fetch-time { overflow-wrap: anywhere; }
+
+/* Anchor clearance is owned by html scroll-padding-top. Applying both
+   scroll padding and section scroll margin double-offsets the target and
+   leaves the preceding section highlighted by the scroll observer. */
