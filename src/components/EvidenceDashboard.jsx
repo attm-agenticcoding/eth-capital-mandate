@@ -48,6 +48,27 @@ function EthMark({ className = '' }) {
   return <svg className={className} viewBox="0 0 40 64" fill="none" aria-hidden="true"><path d="m20 0 20 33-20 12L0 33 20 0Z" fill="currentColor" opacity=".9" /><path d="m20 0 20 33-20-9V0Z" fill="currentColor" opacity=".5" /><path d="m0 37 20 12 20-12-20 27L0 37Z" fill="currentColor" opacity=".7" /><path d="m20 24 20 9-20 12V24Z" fill="#142923" opacity=".5" /></svg>;
 }
 
+function ThemeToggle() {
+  const [theme, setTheme] = useState(() => (
+    typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
+  ));
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) themeColor.content = theme === 'dark' ? '#0f1915' : '#f6f7f3';
+    try {
+      localStorage.setItem('eth-evidence-theme', theme);
+    } catch { /* Theme switching still works when preferences cannot be saved. */ }
+  }, [theme]);
+
+  return <div className="theme-toggle" role="group" aria-label="看板配色模式">
+    <button type="button" aria-label="切换为浅色模式" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>浅色</button>
+    <button type="button" aria-label="切换为深色模式" aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}>深色</button>
+  </div>;
+}
+
 function Badge({ status = 'unknown', label, className = '' }) {
   const info = STATUS[status] || STATUS.unknown;
   return <span className={`evidence-badge badge-${info.tone} ${className}`}><span className="badge-dot" />{label || info.label}</span>;
@@ -181,7 +202,7 @@ export function EvidenceDashboard({ evidence }) {
     <a href="#main-content" className="skip-link">跳到研究内容</a>
     <header className="site-header"><div className="header-inner"><a className="wordmark" href="#top" aria-label="ETH 研究观察首页"><EthMark /><span>ETH<span className="wordmark-divider" /><span className="wordmark-caption">研究观察</span></span></a><div className="header-note"><span className="live-dot" />证据优先 · 独立核验</div><a className="header-method-link" href="#methodology">阅读方法<Icon name="arrow" size={15} /></a></div></header>
     <section className="hero" id="top"><div className="hero-inner"><div className="hero-copy"><div className="hero-kicker"><span className="hero-kicker-line" />ETHEREUM RESEARCH MONITOR</div><h1>ETH 储值与<br className="desktop-break" />抵押需求观察<span className="heading-dot">.</span></h1><p className="hero-description">回到三个可检验的问题：谁需要持有，谁愿意付费，<br className="desktop-break" />以及压力来临时，谁仍然选择 ETH。</p><div className="hero-metadata"><span>证据框架 {evidence.version || 'v2'}</span><span className="metadata-divider" /><span>快照 {formatTime(evidence.generatedUtc)} UTC</span></div></div><aside className="identification-card" aria-label="当前研究识别状态"><div className="identification-top"><span>当前识别状态</span><Icon name="info" size={16} /></div><h2>未建立识别</h2><p>现有读数尚不足以单独识别<br />ETH 的储值溢价。</p><div className="identification-line" /><div className="evidence-inventory"><div><strong>{observedCount}</strong><span>项直接观测</span></div><div><strong>{proxyCount}</strong><span>项代理量</span></div><div><strong>{unknownCount}</strong><span>项待补 / 异常</span></div></div><div className="inventory-note">证据项数仅用于导航，不是评分或投资判断</div><EthMark className="hero-watermark" /></aside></div></section>
-    <div className="navigation-shell"><nav className="section-navigation" aria-label="研究章节"><div className="section-links">{SECTIONS.map((section, index) => <a className={activeSection === section.id ? 'active' : ''} key={section.id} href={`#${sections[index]?.id || section.id}`} onClick={() => setActiveSection(section.id)}><span>0{index + 1}</span>{section.short}</a>)}</div><button className={`methodology-toggle ${showMethodology ? 'is-active' : ''}`} type="button" aria-pressed={showMethodology} onClick={() => setShowMethodology(!showMethodology)}><Icon name="book" size={16} /><span>显示口径</span><span className="toggle-track"><span /></span></button></nav></div>
+    <div className="navigation-shell"><nav className="section-navigation" aria-label="研究章节"><div className="section-links">{SECTIONS.map((section, index) => <a className={activeSection === section.id ? 'active' : ''} key={section.id} href={`#${sections[index]?.id || section.id}`} onClick={() => setActiveSection(section.id)}><span>0{index + 1}</span>{section.short}</a>)}</div><div className="navigation-controls"><ThemeToggle /><button className={`methodology-toggle ${showMethodology ? 'is-active' : ''}`} type="button" aria-pressed={showMethodology} onClick={() => setShowMethodology(!showMethodology)}><Icon name="book" size={16} /><span>显示口径</span><span className="toggle-track"><span /></span></button></div></nav></div>
     <main id="main-content" className="main-content"><MarketContext market={evidence.market} /><DataQuality quality={evidence.quality} /><div className="evidence-legend"><span>读数标记</span><Badge status="observed" /><Badge status="proxy" /><Badge status="unknown" /><Badge status="stale" /><Badge status="invalid" /><span className="legend-time">所有时间均为 UTC</span></div>
       {sections.map((section, index) => <ResearchSection key={section.id || index} section={section} index={index} showMethodology={showMethodology} />)}
       {!sections.length && <div className="empty-state"><Icon name="info" size={26} /><h2>暂无可用研究数据</h2><p>数据模型尚未提供有效章节。本页不会用旧版评分或默认值代替。</p></div>}

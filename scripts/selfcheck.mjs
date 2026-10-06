@@ -2,3 +2,5 @@
 // These regressions instead check data meaning, missingness and point-in-time integrity.
 import '../test/evidence.test.mjs';
 import '../test/fetch-health.test.mjs';
+
+import '../test/theme.test.mjs';

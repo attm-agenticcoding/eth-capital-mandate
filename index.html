@@ -1,9 +1,27 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#142923" />
+    <meta name="theme-color" content="#0f1915" />
+    <meta name="color-scheme" content="dark light" />
+    <script>
+      // Apply the preference before styles or React load; storage may be blocked.
+      (() => {
+        let theme = 'dark';
+        try {
+          const saved = localStorage.getItem('eth-evidence-theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+        } catch { /* The default remains usable in private or restricted browsers. */ }
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#0f1915' : '#f6f7f3';
+      })();
+    </script>
+    <style>
+      html { background: #0f1915; color-scheme: dark; }
+      html[data-theme="light"] { background: #f6f7f3; color-scheme: light; }
+    </style>
     <meta name="description" content="从持有需求、实际付费与压力下可替代性观察 ETH。清晰区分直接观测、代理量与数据缺口。" />
     <title>ETH 储值与抵押需求观察</title>
   </head>
