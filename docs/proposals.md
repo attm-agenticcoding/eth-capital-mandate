@@ -1,3 +1,5 @@
+> Archived v1 proposals. These were not calibrated remedies and are superseded by [v2 reconstruction](reconstruction-v2.md). The former weighting, single-hit override and component-demotion flags have no effect in the current evidence framework. Historical text is retained for audit, not as an active recommendation.
+
 # Part B — proposals (operator decides)
 
 These three changes alter what the scored index *means* (exit-rule semantics, what counts as
@@ -147,3 +149,4 @@ log — i.e. demote only if it's still pinned at 0 after the haircut leg has had
 `elevated` thresholds — a one-year error shifts KC-1's hit date by a year. **Resolved 2026-06-19:**
 the operator set it to **`2026-06-01`** (observation window starts this month). New horizons:
 KC-1 hit **2031-06-01** (elevated from 2029-06-01), KC-4 hit **2029-06-01**, KC-7 hit **2028-06-01**.
+

@@ -28,8 +28,16 @@ jobs:
           cache: npm
       - run: npm ci
 
+      - name: Evidence regression tests and lint
+        run: |
+          npm run selfcheck
+          npm run lint
+
       - name: Fetch live data (all AUTO metrics)
         run: npm run fetch
+
+      - name: Verify versioned snapshot and appended history
+        run: npm run verify-data
 
       - name: Commit data — the git log IS the longitudinal record
         run: |
@@ -63,3 +71,4 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+

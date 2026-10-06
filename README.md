@@ -1,182 +1,93 @@
-# ETH Capital-Mandate Tracker — Convention Hardening Index
+# ETH 储值与抵押需求观察
 
-A public, auto-updating dashboard that tracks **one** thesis: that ETH's only durable value channel is becoming the
-**capital stock of open on-chain finance** — native, non-freezable, slashable, yield-bearing collateral — **not**
-transaction fees.
+一个公开、每 6 小时更新的研究看板。它把三个问题分开：
 
-It scores a **Convention Hardening Index (CHI)** (3 **auto-scored** components, 0–3), scores the **7 thesis kill
-criteria** as a structural-falsification scorecard (**≥3 sustained hits → consider exit**), runs a **factory watch**
-and a **bear-confirmation panel**, and maps the live CHI to pre-set probability bands.
+1. 谁必须持有 ETH？原生质押、有效安全资本与实际抵押融资分别测量
+2. 谁实际付费？网络收费、销毁、发行、客户支付与补贴分别列示
+3. 压力下能否被替代？在可比风险与融资条件下观察容量、成本和留存
 
-> Probabilities are a **stated analyst prior, not a model output**. Not investment advice.
+生态采用放在辅助背景中。网络规模、TVL、相关性、单个市场最高 LLTV 不被加总为 SoV 分数，也不映射成价格概率或退出指令。
 
----
+## 当前能回答与不能回答的内容
 
-## How it works
+- 可观测：来源报告的价格、波动率、原生质押有效余额、供给变化、Ethereum L1 费用、稳定币分布
+- 有限定的代理量：再质押协议 USD TVL、链上 TVL、Morpho 特定融资市场的债务加权 LLTV
+- 明确未知：去重底层再质押 ETH、有效可罚没分配、AVS 真实客户净支付、补贴依赖、实际使用的 ETH 抵押品、可比融资便利收益、固定数量口径压力留存
+- 口径异常待核对：旧 RWA 分类序列；历史 2026-09-15 的总量下降约 80.2% 不能直接解释为赎回或迁移
 
-- **`scripts/fetch.mjs`** runs on a 6-hour cron (and on demand). It pulls every AUTO metric from **keyless** public
-  APIs, computes the derived series (realized vol, 90-day ETH/BTC correlation, collateral composition, L2→L1 take),
-  merges the human-curated **`data/manual.json`**, scores the CHI (`src/lib/chi.mjs`), and writes:
-  - `data/latest.json` — the snapshot the site imports
-  - `data/history.ndjson` — append-only longitudinal log (**the git commit log is the record**)
-  - `data/history.json` — parsed tail used for the component score sparklines
-- The site is a **fully static** Vite/React build that imports `data/latest.json` and recomputes the CHI live (so
-  editing `manual.json` and rebuilding reflects immediately).
-- **GitHub Actions** (`.github/workflows/deploy.yml`) does fetch → commit data → build → deploy to **GitHub Pages**,
-  every 6h. No server, no secrets — all sources are keyless.
+“已观测”仅指数据可读，不表示储值命题已得到确认。数字为空不代表零。未建立因果识别，也没有经验证的价格预测模型。
 
-### Guardrails
-- **Never fabricate.** API failure → the previous good value is carried forward and stamped `stale`. A manual field
-  left unset renders **"Awaiting"**, never a fake number.
-- The scored index is **fully auto** (CHI-1/3/5). CHI-1 keeps a manual *stress-confirm* leg that only matters
-  during a ≥50% drawdown. Two signals with **no keyless feed** are kept off the scored index: **CHI-4**
-  (institutional collateral) and the **protocol factory** — user-fed milestones shown in the Factory watch that do
-  **not** move on their own. (**CHI-2** and **CHI-6** were retired — CHI-2's signal is already in CHI-1's net
-  collateral drift; on-chain fixed-term ETH credit barely exists and has no feed.)
+## 数据契约 v2
 
----
+最新快照包含 `schemaVersion: 2`、`methodologyVersion: "eth-evidence-v2"`。每个 auto 数据组有 health：
 
-## The CHI components — exactly what lights each
+- status：ok / stale / partial / failed；页面另外区分 unknown 与 invalid
+- observedAt：来源实际提供的观察时间；缺少时保持 null
+- fetchedAt：本次请求时间，绝不替代 observedAt
+- lastSuccessAt：最近成功采集时间
+- ttlHours、reason、cohortId、coverage：时效、限制和样本覆盖
 
-The scored index is **3 auto components**, each **0 / 0.5 / 1** (max 3). 🟢 = auto-fetched from a keyless API; CHI-1 also has a manual stress-confirm leg (🟢+✍️).
+旧快照的 asOf 只是请求时间，页面明确标注，不追溯伪造观察时间。页面载入时重新检查时效；全组 stale 不会被内部旧 ok 字段覆盖。
 
-| # | Component | Mode | Lights (= 1) when |
-|---|-----------|------|-------------------|
-| **CHI-1** | Stress survival | 🟢+✍️ | Through any **≥50% ETH drawdown**, the ETH-system **net** collateral share across Aave/Morpho/Sky falls **≤5pp** AND no top venue delists ETH or cuts max LTV >10pp. **Seeded at 0.5** (the real test is the *next* ≥50% drawdown), but if a ≥50% drawdown is **live** and the net collateral share is already down >5pp, CHI-1 drops to a **0.25 stress-live soft-fail** (below the seed) until the manual no-delist leg resolves. Drawdown is measured from the **true ATH**. Auto-tracks the **net** ETH collateral share — Sky's USDC PSM, pure lenders and same-class loops (wstETH→ETH, sUSDe carries) excluded — plus drawdown; you confirm the no-delist leg only during a crash. |
-| **CHI-3** | Slashable ETH bond demand | 🟢 | **ETH restaked** across EigenLayer / Symbiotic / Karak, **ETH-denominated** (price-stripped). Lights at **≥5M ETH**; **≥1M** = partial. **Reverse (Schelling-retired):** collapses **<1M ETH** → if CHI ≤ 0.5, thesis flagged **RETIRED**. *Headline TVL over-reads — treat as upper bound.* |
-| **CHI-5** | Volatility / haircut regime | 🟢 | ETH trailing-365d realized vol **<50% for ≥2 consecutive quarters** **AND** ETH's **on-chain max-LTV tier rising** (= haircut compressing) across Aave/Morpho. On-chain LTV is literally a haircut (LTV 86% = 14% haircut), measured against uncorrelated debt (ETH↔ETH loops excluded); the trend accrues from our own log. The haircut leg carries **field-level feed health** (`ethMaxLltvStatus` ok/stale/failed) so a **broken** Morpho feed reads distinctly from genuinely **accruing** data. |
+### 保守的口径处理
 
-Half credit (**0.5**) is awarded for meaningful-but-incomplete progress (e.g. CHI-3 ≥1M but <5M ETH; CHI-5 with one of the two legs met).
+- CoinGecko 失败会从 previous.auto 恢复 eth/btc/ratio/vol/correlation 全组末次数据，并标 stale
+- Aave / Morpho / Sky 只保留分场所代理数据，不混成“真实净抵押品份额”，也不把当前 Morpho 余额回填历史
+- 部分场所或协议缺失，不能默默缩小分母；有同口径完整前值则冻结并标旧，否则整体留空
+- 再质押 USD TVL 不是底层 ETH 数量；即使能换算 ETH-equivalent，也不作为真实安全需求
+- Morpho LLTV 使用实际有借款的 ETH 类抵押 / 明确 USD 稳定币负债市场，并按债务加权；不是 Aave haircut
+- 波动率使用每日 UTC 价格；RV365 持续性需要真实观察时间、日历覆盖和相同方法版本，不按 cron 条数判断
+- 费用比率使用来源报告的 Ethereum 费用 / ETH 市值。growthepie 通用 costs_blobs 可能包含非 Ethereum DA；不将它们加总成 ETH 收入
+- L2 → L1 仅在有收款目的地明确的租金指标时计算；不能把通用 all-DA costs 当成 Ethereum 收入
+- RWA USD stock 变化不是 gross issuance；分类、样本及大额断点必须先核对
+- 缺项、过期、错误与不利事实分开，任何一种都不触发自动 SoV 或交易判定
 
-**Retired / off-index.** **CHI-2** (demand-side enforcement) was dropped — its signal is already carried by CHI-1's net ETH-vs-stable collateral drift, and its counterfactual leg ("restrict ETH → lose share") is unattributable. **CHI-6** (duration) was dropped — on-chain fixed-term ETH credit is **<$5M and dormant** (Notional V3 → $0; Pendle is a rate/yield market, not collateral credit) vs ~$13.5B variable-rate ETH collateral, with no keyless maturity feed: a term structure for ETH credit does not exist on-chain yet. **CHI-4** (institutional tabularization — ≥2 regulated venues listing ETH as eligible collateral at haircut ≤40%, **live**) has **no keyless feed**, so it is an **unscored, user-fed milestone** shown in the Factory watch — the highest-confirmation signal, but it does not move the index.
+## 历史保留与版本边界
 
-### CHI → probability mapping (computed live)
+`data/history.ndjson` 保持追加写入；旧记录字节不清洗、不改分、不回填。`data/history.json` 在闭合数组前追加新行，不重新序列化旧记录。旧记录没有版本字段，页面明确归为 legacy。
 
-| CHI total (max 3) | Mandate branch | P($10k by ’30) | P($20k) | Status |
-|-----------|----------------|----------------|---------|--------|
-| ≥ 2.5 | 53% | 45% | 22% | On track |
-| ≥ 1.5 | 42% | 38% | 17% | Hardening |
-| else (current) | 32% | 30% | 12% | Stalled / awaiting |
-| ≤ 0.5 **and** CHI-3 reverse lit | 25% | — | — | **Schelling RETIRED** |
+旧分数和先验留在历史记录与 Git 历史中供审计；当前代码不消费它们。旧、新方法不拼接趋势，不据此做新框架回测。`data/manual.json` 的旧操作员记录保留，不再作为自动打分依据。
 
----
+样本成员变动会留下 cohortReviewRequired。调查真正的新增、退出或 API 故障之后，才应在一次可审计的方法变更中更新纳入清单和 cohort ID；不要通过删除历史或重置前值来消除警告。
 
-## Kill criteria — structural falsification (the exit rule)
+## 开发与验证
 
-Alongside the confirm-side CHI, the dashboard scores the **7 original thesis kill criteria** as a standalone scorecard
-(`src/lib/kill.mjs` → the **Kill criteria** panel). These are **structural falsifiers over a 3–5-year window, not price
-stops**. The stated decision rule: **≥3 sustained hits → seriously consider exit.**
-
-Two kinds, which decide what counts as a *hit*:
-- **Level** (KC-2/3/5/6) — a threshold breach is itself a structural regression, so it can hit immediately. The
-  persistence/flow legs (KC-3 RWA flow, KC-5 sustained issuance, KC-6 growth race) **accrue from the longitudinal log**
-  (null → "accruing" until enough history exists), exactly like CHI-5's haircut leg.
-- **Deadline** (KC-1/4/7) — the criterion is "within N years" (KC-1 5y, KC-4 3y, KC-7 2y). A condition that is
-  *currently* true is **expected this early** and shows **on watch**, not a hit; it becomes a hit only once the horizon
-  (anchored at `thesis_clock_start` in `manual.json`) elapses with the condition still true. This stops the scorecard
-  over-firing at thesis year ~0, when by construction the market hasn't priced the thesis.
-
-| # | Kill criterion | Kind | Hits when | Source |
-|---|----------------|------|-----------|--------|
-| **KC-1** | Cash flow + monetary premium 双双落空 | deadline 5y | L1 take-rate ≈0 (<0.5%/yr) **and** ETH/BTC 90d corr >0.85, still true at the 5y horizon | growthepie + CoinGecko |
-| **KC-2** | 支付层流失 | level | ETH-aligned (mainnet + ETH-settled rollups) stablecoin share **<35%** (from ~50%) | DefiLlama |
-| **KC-3** | 机构结算层旁落 | level | ETH-system RWA share **<50%** (majority defect); new-issuance flow read accrues | DefiLlama |
-| **KC-4** | L2 价值回流停滞 | deadline 3y | no top L2 at **Stage 2 + based sequencing** by the 3y horizon (manual leg; L2→L1 reflow as econ context) | L2BEAT + manual |
-| **KC-5** | 货币政策失信 | level | NET issuance **>2–3%/yr sustained**, or governance raises the curve (manual). **Mild inflation does NOT count** — it pays for the slashable bond | ultrasound.money |
-| **KC-6** | 被 Solana 全面超车 | level | Solana **overtakes** ETH on all-chain TVL share (hit). **Leading leg:** SOL's **DEX-volume share** crossing ETH's → watch, even while TVL still favors ETH (volume leads TVL) | DefiLlama (TVL + DEX volume) |
-| **KC-7** | 技术护城河落空 | deadline 2y | no material AI-assisted formal-verification progress by the 2y horizon (manual) | manual watch |
-
-Auto criteria (KC-1/2/3/6 and KC-5's level) recompute live from the snapshot; **KC-4, KC-7 and KC-5's governance leg
-are user-fed legs in `manual.json → kill_criteria`**. `thesis_clock_start` sets the deadline horizons. KC-5's framing
-is deliberately tuned to the criterion: **mild inflation is neutral** (it funds the security bond), so the bear panel's
-issuance read shows net issuance as **%/yr against the 2–3% line**, not a binary "ultrasound / not".
-
----
-
-## Editing the manual data
-
-The CHI is **fully auto-scored**, so most inputs need no curation. The only human-curated inputs left live in
-**`data/manual.json`**: CHI-1's stress-confirm leg, the **unscored** institutional watch (CHI-4), and the protocol
-factory watch. Edit it directly in the **GitHub web UI** (pencil → commit); the next cron run (or any push) picks it
-up. **Leave anything you can't source as unset/false.**
-
-```jsonc
-{
-  "_updated": "2026-06-15",                     // bump when you edit
-
-  "chi1_stress": {                              // CHI-1 manual leg — only matters during a ≥50% drawdown
-    "episode_through_50dd": false,              // set true once a ≥50% drawdown completes
-    "share_delta_pp": null,                     // ETH-system collateral share change in pp (negative = fell)
-    "no_delist_or_ltv_cut": null                // true if no top venue delisted ETH / cut max LTV >10pp
-  },
-
-  "chi4_institutional": {                       // UNSCORED watch — add one object per regulated venue
-    "venues": [
-      { "name": "", "type": "PB|CCP|margin", "asset": "spot|staked",
-        "haircut_pct": null, "live": false, "source": "" }
-    ]
-  },
-
-  "factory_protocol": {                         // protocol value-routing watch
-    "items": [
-      { "name": "blob-fee-floor|mev-burn|native-rollup-eth-bond", "eip": "",
-        "status": "idea|draft|cfi|scheduled|live", "fork": "", "source": "" }
-    ]
-  },
-  "factory_codification_note": "",
-
-  "kill_criteria": {                            // manual legs for the kill scorecard (no keyless feed)
-    "thesis_clock_start": "2025-01-01",         // anchors the DEADLINE horizons (KC-1 5y, KC-4 3y, KC-7 2y)
-    "kc4_l2_reflow":         { "top_l2_stage2_and_based": null, "source": "" },  // true once a top L2 hits Stage 2 + based seq
-    "kc5_monetary":          { "issuance_curve_raised": false,  "source": "" },  // true if governance repeatedly raises issuance
-    "kc7_formal_verification": { "material_progress": null,     "source": "" }   // true on material formal-verification progress
-  }
-}
+```sh
+npm ci
+npm run selfcheck
+npm run lint
+npm run build
+npm run dev
 ```
 
-A field left unset renders **"Awaiting"** in the UI. CHI-4's watch lights at ≥2 live venues (haircut ≤40%) but
-**never moves the scored index**. Always attach a `source` URL; never invent values.
+`npm run fetch` 会请求真实公开接口并追加快照。导入 scripts/fetch.mjs 不会自动请求或写文件。程序化调用 `run({ write: false })` 可验证实时接口而不改历史。
 
-### Experiments (propose-only, off by default)
+回归测试覆盖空值与真实零、市场 403 全组恢复、样本缺失、未来时间、旧观察重复获取、日历持续性、费用目的地、方法版本、历史字节不变、完整快照组合和全源失败。原来的 39 项测试锁定已退休的评分语义；新测试检验数据意义与失效边界。
 
-Three semantic changes are implemented behind opt-in flags that default to **absent → off**, so the scored
-index reads exactly as today until you flip one. See **`docs/proposals.md`** for the full write-ups and the
-effect on current data. Add to `manual.json` to enable:
+## 自动刷新与发布
 
-```jsonc
-{
-  "experiments": {
-    "exit_rule": "count",              // B1: "count" (default) | "weighted" | "single_hit_override"
-    "kc2_kc3_strict_alignment": false, // B2: score KC-2/KC-3 against the STRICT ETH-aligned set
-    "demote_chi5": false               // B3: drop CHI-5 from the scored index (→ unscored watch, max 2)
-  }
-}
-```
+GitHub Actions 仍在 main 推送、手动 dispatch 和每 6 小时执行。流程：安装 → 离线回归 / lint → 取数 → 验证快照 → 提交追加数据 → 构建 → GitHub Pages。
 
----
+源故障优先保留可追溯的末次值与明确状态。全源失败会让刷新任务失败；已发布页面仍按 TTL 显示旧值风险，不伪装为新观测。
 
-## Local development
+## 下一阶段研究
 
-```bash
-npm install
-npm run fetch     # pull live data → data/latest.json (+ history)
-npm run dev       # local dev server
-npm run build     # production build → dist/
-npm run preview   # serve the production build
-```
+- 逐资产 underlying 数量、兑换率和跨协议去重
+- 服务分配、客户收入与补贴账本
+- 固定 debt asset、期限、利用率、oracle / 法律 / 托管风险下的 ETH、BTC、稳定币和 tokenized Treasury 比较
+- 参数变动、补贴结束和压力事件的固定 cohort 研究
+- 验证者、客户端和托管集中度；最终性、罚没与货币政策完整性
+- 独立的估值情景、假设和敏感性；先定义终值或首次触及，不能从代理量机械生成概率
 
-## Deployment
+这些研究尚未完成。现有看板为它们保留清晰缺口，不以主观分值替代数据。
 
-GitHub Actions builds and deploys to **GitHub Pages** on every push to `main`, on manual dispatch, and every 6 hours.
-The data refresh is committed back to the repo (`[skip ci]` so it doesn't loop), then the site is rebuilt with the
-fresh snapshot and deployed. To enable: push to GitHub, ensure **Settings → Pages → Source = GitHub Actions** and
-**Settings → Actions → Workflow permissions = Read and write**.
+## 参考
 
-## Data sources (all keyless)
+- [Aave 抵押与借款](https://aave.com/docs/aave-v3/smart-contracts/pool)
+- [Morpho 市场、LLTV 与不可变参数](https://docs.morpho.org/learn/concepts/blue/)
+- [EigenLayer 有效分配](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/core/AllocationManager.md)
+- [DefiLlama RWA 口径](https://docs.llama.fi/real-world-assets/real-world-assets/methodology-and-metrics)
+- [growthepie 数据代码](https://github.com/growthepie/gtp-backend)
+- [重构说明](docs/reconstruction-v2.md)
 
-CoinGecko (price / vol / correlation / ATH) · DefiLlama (Aave/Sky collateral, stablecoins, chains, RWA, restaking, DEX volume) · Morpho Blue API (per-market net collateral + ETH on-chain max-LTV) ·
-ultrasound.money (supply, staking, issuance/burn) · growthepie.xyz (L1+blob fees, L2→L1 economics) · L2BEAT (L2 TVL).
-
----
-
-*The dashboard tests a thesis; it does not endorse it. Not investment advice.*
+研究用途，不构成投资建议或交易指令。

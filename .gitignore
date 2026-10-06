@@ -27,3 +27,7 @@ test-results
 *.njsproj
 *.sln
 *.sw?
+
+
+# Local read-only probes and browser QA artifacts
+/qa/

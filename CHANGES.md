@@ -1,3 +1,14 @@
+# 2026-10-06 — Evidence framework v2
+
+- Replaced CHI / price probabilities / exit voting with four separate evidence panels
+- Corrected collateral, restaking, LLTV, volatility-persistence and fee-recipient semantics
+- Added field/group provenance, timestamps, TTL, fixed-cohort failure handling and unknown states
+- Preserved legacy historical records; new records are versioned and append-only
+- Added offline counterexample and composed-source regression tests
+- Missing underlying ETH, active security allocation, real AVS customer revenue and collateral specialness remain explicitly unmeasured
+
+---
+
 # Maintenance & hardening pass — summary
 
 Branch `harden/maintenance-pass`. Verification harness: `npm run selfcheck && npm run build`
@@ -44,3 +55,4 @@ Implemented behind `manual.json → experiments.*` (absent → off) and written 
 2. ~~`thesis_clock_start`~~ **Resolved 2026-06-19** → set to **`2026-06-01`** (observation starts this
    month). Deadline horizons now KC-1 2031-06-01, KC-4 2029-06-01, KC-7 2028-06-01; live statuses
    unchanged (all deadlines early-window → KC-1 watch, KC-4/7 awaiting).
+
