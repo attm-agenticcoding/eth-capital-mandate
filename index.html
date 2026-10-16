@@ -1,22 +1,46 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f1915" />
     <meta name="color-scheme" content="dark light" />
     <script>
-      // Apply the preference before styles or React load; storage may be blocked.
-      (() => {
-        let theme = 'dark';
-        try {
-          const saved = localStorage.getItem('eth-evidence-theme');
-          if (saved === 'light' || saved === 'dark') theme = saved;
-        } catch { /* The default remains usable in private or restricted browsers. */ }
-        document.documentElement.dataset.theme = theme;
-        document.documentElement.style.colorScheme = theme;
-        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#0f1915' : '#f6f7f3';
-      })();
+// Resolve before styles load. A blocked storage area must not disable the control.
+(() => {
+  const key = 'eth-evidence-theme';
+  const root = document.documentElement;
+  const system = window.matchMedia('(prefers-color-scheme: dark)');
+  const valid = value => value === 'light' || value === 'dark' ? value : 'system';
+  const read = () => {
+    try { return valid(localStorage.getItem(key)); } catch { return 'system'; }
+  };
+  let preference = read();
+  const apply = () => {
+    const theme = preference === 'system' ? (system.matches ? 'dark' : 'light') : preference;
+    root.dataset.theme = theme;
+    root.dataset.themePreference = preference;
+    root.style.colorScheme = theme;
+    const color = document.querySelector('meta[name="theme-color"]');
+    if (color) color.content = theme === 'dark' ? '#0f1915' : '#f6f7f3';
+    document.querySelectorAll('[data-theme-select]').forEach(select => { select.value = preference; });
+  };
+  apply();
+  document.addEventListener('DOMContentLoaded', apply);
+  document.addEventListener('change', event => {
+    if (!event.target.matches('select[data-theme-select]')) return;
+    preference = valid(event.target.value);
+    try {
+      if (preference === 'system') localStorage.removeItem(key);
+      else localStorage.setItem(key, preference);
+    } catch { /* Keep the in-memory choice when storage is unavailable. */ }
+    apply();
+  });
+  system.addEventListener('change', () => { if (preference === 'system') apply(); });
+  window.addEventListener('storage', event => {
+    if (event.key === key || event.key === null) { preference = read(); apply(); }
+  });
+})();
     </script>
     <style>
       html { background: #0f1915; color-scheme: dark; }

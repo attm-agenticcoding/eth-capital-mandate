@@ -5,27 +5,78 @@ import vm from 'node:vm';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
 const bootstrap = scripts.find((m) => !m[1].includes('module') && /theme/.test(m[2]));
-function initialize(saved, unavailable = false) {
-  const attrs = {}, meta = {}, storageCalls = [];
-  const root = { dataset: {}, style: {}, setAttribute: (k, v) => { attrs[k] = v; if (k === 'data-theme') root.dataset.theme = v; } };
-  const document = { documentElement: root, querySelector: () => ({ setAttribute: (k, v) => { meta[k] = v; } }) };
-  const storage = { getItem: (key) => { storageCalls.push(key); if (unavailable) throw new Error('Storage disabled'); return saved; }, setItem: () => {} };
-  const context = { document, localStorage: storage, window: { localStorage: storage }, console };
+function initialize(saved, unavailable = false, darkSystem = false) {
+  const meta = {}, storageCalls = [], listeners = {}, systemListeners = {}, windowListeners = {};
+  const root = { dataset: {}, style: {} };
+  const control = { value: '', matches: () => true };
+  const document = { documentElement: root, querySelector: () => meta,
+    querySelectorAll: () => [control], addEventListener: (name, callback) => { listeners[name] = callback; } };
+  const values = new Map(saved == null ? [] : [['eth-evidence-theme', saved]]);
+  const storage = {
+    getItem: (key) => { storageCalls.push(key); if (unavailable) throw new Error('Storage disabled'); return values.get(key) ?? null; },
+    setItem: (key, value) => { if (unavailable) throw new Error('Storage disabled'); values.set(key, value); },
+    removeItem: (key) => { if (unavailable) throw new Error('Storage disabled'); values.delete(key); },
+  };
+  const system = { matches: darkSystem, addEventListener: (name, callback) => { systemListeners[name] = callback; } };
+  const context = { document, localStorage: storage, window: { matchMedia: () => system,
+    addEventListener: (name, callback) => { windowListeners[name] = callback; } }, console };
   assert.ok(bootstrap, 'early inline theme bootstrap exists');
   vm.runInNewContext(bootstrap[2], context, { timeout: 1000 });
-  return { theme: root.dataset.theme || attrs['data-theme'], scheme: root.style.colorScheme, storageCalls, meta };
+  return { root, system, storageCalls, meta, values, control, windowListeners,
+    get theme() { return root.dataset.theme; },
+    choose(value) { control.value = value; listeners.change({ target: control }); },
+    changeSystem(dark) { system.matches = dark; systemListeners.change(); },
+  };
 }
-test('theme initializes before React, with dark HTML fallback', () => {
-  assert.match(html, /<html[^>]*data-theme="dark"/);
+test('theme initializes before styles and React', () => {
+  assert.ok(bootstrap.index < html.indexOf('<style>'));
   assert.ok(bootstrap.index < html.indexOf('type="module"'));
 });
-test('new visitors default to the requested dark theme', () => assert.equal(initialize(null).theme, 'dark'));
-test('saved light choice is applied before rendering', () => assert.equal(initialize('light').theme, 'light'));
-test('saved dark choice survives initialization', () => assert.equal(initialize('dark').theme, 'dark'));
-test('invalid stored values fall back to dark', () => {
-  for (const value of ['', 'system', 'unknown', '<script>']) assert.equal(initialize(value).theme, 'dark');
+test('new visitors follow the system without persisting a forced preference', () => {
+  for (const dark of [false, true]) {
+    const page = initialize(null, false, dark);
+    assert.equal(page.theme, dark ? 'dark' : 'light');
+    assert.equal(page.root.dataset.themePreference, 'system');
+    assert.equal(page.values.size, 0);
+  }
 });
-test('blocked browser storage cannot break rendering', () => assert.equal(initialize(null, true).theme, 'dark'));
+test('saved light choice is applied before rendering', () => assert.equal(initialize('light', false, true).theme, 'light'));
+test('saved dark choice survives initialization', () => assert.equal(initialize('dark').theme, 'dark'));
+test('invalid stored values fall back to the system', () => {
+  for (const value of ['', 'system', 'unknown', '<script>']) assert.equal(initialize(value).theme, 'light');
+});
+test('blocked storage still allows changing the theme', () => {
+  const page = initialize(null, true);
+  page.choose('dark');
+  assert.equal(page.theme, 'dark');
+  page.choose('system');
+  assert.equal(page.theme, 'light');
+});
+test('explicit choice persists, System clears it and resumes system changes', () => {
+  const page = initialize(null);
+  page.changeSystem(true);
+  assert.equal(page.theme, 'dark');
+  page.choose('light');
+  assert.equal(page.values.get('eth-evidence-theme'), 'light');
+  page.changeSystem(true);
+  assert.equal(page.theme, 'light');
+  page.choose('system');
+  assert.equal(page.values.size, 0);
+  assert.equal(page.theme, 'dark');
+  page.changeSystem(false);
+  assert.equal(page.theme, 'light');
+});
+test('another tab can update or clear the saved preference', () => {
+  const page = initialize(null);
+  page.values.set('eth-evidence-theme', 'dark');
+  page.windowListeners.storage({ key: 'eth-evidence-theme' });
+  assert.equal(page.theme, 'dark');
+  assert.equal(page.control.value, 'dark');
+  page.values.clear();
+  page.windowListeners.storage({ key: null });
+  assert.equal(page.theme, 'light');
+  assert.equal(page.control.value, 'system');
+});
 test('theme changes never use color inversion', () => {
   const css = fs.readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
   assert.doesNotMatch(css, /filter\s*:\s*invert/i);

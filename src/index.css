@@ -512,7 +512,7 @@ button { color: inherit; }
 
 
 /* Shared color roles keep every research state readable in both themes.
-   Dark is the fallback; index.html resolves a saved preference before paint. */
+   index.html resolves the saved choice or system preference before paint. */
 :root {
   color-scheme: dark;
   --canvas: #0f1915;
@@ -606,11 +606,6 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline-color: va
 .is-active .toggle-track { background: var(--green); }
 .is-active .toggle-track > span { background: var(--selected-ink); }
 .navigation-controls { display: flex; align-items: center; flex-shrink: 0; gap: 18px; }
-.theme-toggle { display: inline-flex; padding: 3px; gap: 3px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--paper); }
-.theme-toggle button { min-width: 42px; min-height: 32px; padding: 6px 9px; border: 0; border-radius: 3px; background: transparent; color: var(--muted); font-size: 11px; line-height: 1.4; white-space: nowrap; }
-.theme-toggle button:hover { background: var(--surface); color: var(--ink); }
-.theme-toggle button[aria-pressed="true"] { background: var(--green); color: var(--selected-ink); font-weight: 600; }
-.theme-toggle button:focus-visible { outline-offset: 2px; }
 .market-item, .quality-panel, .quality-issues, .source-quality-grid, .source-quality-card,
 .metric-card, .metric-provenance, .metric-method, .section-gaps, .context-tag,
 .methodology-section, .history-notice, .glossary > div, .diagnostics,
@@ -659,8 +654,6 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline-color: va
 
 @media (max-width: 800px) {
   .navigation-controls { width: 100%; justify-content: space-between; padding: 5px 0; }
-  .theme-toggle { padding: 2px; gap: 2px; }
-  .theme-toggle button { min-height: 30px; min-width: 40px; font-size: 10px; padding: 5px 8px; }
 }
 
 /* Printing stays legible and economical regardless of the saved screen theme. */
@@ -694,4 +687,19 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline-color: va
     --hero-line: #cbd4c4;
   }
   .navigation-controls { display: none !important; }
+}
+
+.header-actions { display:flex; align-items:center; justify-content:flex-end; gap:24px; margin-left:auto; }
+.theme-control { --theme-border:var(--hero-line); --theme-surface:var(--hero-card); --theme-text:var(--hero-ink); --theme-focus:var(--hero-accent); }
+
+.theme-control { display:flex; align-items:center; justify-content:flex-end; gap:8px; font-size:12px; white-space:nowrap; }
+.theme-control select { font:inherit; min-height:44px; padding:8px 30px 8px 10px; border:1px solid var(--theme-border); border-radius:7px; background:var(--theme-surface); color:var(--theme-text); cursor:pointer; }
+:where(select, button, input, a, summary):focus-visible { outline:3px solid var(--theme-focus); outline-offset:3px; }
+@media print { .theme-control { display:none !important; } }
+
+@media (max-width:600px) {
+  .header-inner { flex-wrap:wrap; gap:10px 14px; padding-top:12px; padding-bottom:12px; }
+  .header-actions { gap:12px; flex-wrap:wrap; }
+  .header-method-link { display:none; }
+  .theme-control { gap:6px; }
 }
