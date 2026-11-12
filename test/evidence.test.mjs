@@ -41,11 +41,20 @@ test('low or high correlation never generates a thesis verdict', () => {
   const s = fresh(); s.auto.correlation.now = -0.5; assert.equal(view(s).reviewStatus, view().reviewStatus);
   assert.match(metrics(view(s))['btc-correlation'].caveat, /高相关不等于/);
 });
+const gapsOf = (v, id) => v.sections.find((s) => s.id === id).gaps;
 test('legacy ETH-equivalent restaking is not genuine ETH', () => {
-  const m = metrics(view()); assert.equal(m['underlying-eth'].value, null); assert.equal(m['slashable-eth'].value, null);
+  const v = view(), m = metrics(v);
+  // Underlying and slashable ETH are unmeasured: listed as a gap, never rendered as a reading.
+  assert.equal('underlying-eth' in m, false); assert.equal('slashable-eth' in m, false);
+  assert.ok(gapsOf(v, 'holding').some((g) => /可罚没/.test(g.label)));
   assert.equal(m['restaking-tvl'].status, 'proxy'); assert.ok(m['restaking-tvl'].value > 0);
 });
-test('no Aave pool balance is presented as genuine collateral', () => assert.equal(metrics(view())['real-collateral'].value, null));
+test('no Aave pool balance is presented as genuine collateral', () => {
+  const v = view(), m = metrics(v);
+  assert.equal('real-collateral' in m, false);
+  assert.ok(gapsOf(v, 'holding').some((g) => /Aave/.test(g.reason)));
+  for (const id of ['usd-debt-eth-share', 'usd-debt-btc-share', 'lltv-gap']) assert.equal(m[id].value, null, id);
+});
 test('legacy max-LLTV does not become a weighted observed haircut', () => assert.equal(metrics(view())['morpho-lltv'].value, null));
 test('new Morpho cohort supplies debt-weighted terms with proper caveat', () => {
   const s = fresh(); s.auto.collateral.morphoFinance = { debtWeightedLltvPct: 84.2, totalBorrowUsd: 2e9, health: structuredClone(s.auto.collateral.health) };
@@ -63,7 +72,37 @@ test('partial restaking cohort does not render a shrunk headline', () => {
 test('missing Morpho does not create a more favorable collateral number', () => {
   const s = fresh(); s.auto.collateral.morphoOk = false; s.auto.collateral.combinedEthSharePct = 99;
   assert.equal(groupHealth(s, 'collateral', AS_OF).status, 'partial');
-  assert.equal(metrics(view(s))['real-collateral'].value, null);
+  const m = metrics(view(s));
+  assert.equal('real-collateral' in m, false);
+  assert.equal(m['usd-debt-eth-share'].value, null); assert.equal(m['lltv-gap'].value, null);
+});
+test('every metric on the page is a reading the pipeline can observe', () => {
+  const s = fresh();
+  s.auto.collateral.usdDebtByCollateral = { ethSharePct: 13.1, btcSharePct: 40.9, lltvGapPp: 0, health: structuredClone(s.auto.collateral.health) };
+  s.auto.collateral.morphoFinance = { debtWeightedLltvPct: 86, totalBorrowUsd: 284e6, health: structuredClone(s.auto.collateral.health) };
+  s.auto.supply.stakedEffectiveSharePct = 36.36; s.auto.supply.burnOffsetPct = 3.07;
+  s.auto.treasuries = { totalHoldingsEth: 8.1e6, cohortHoldingsEth: 7.6e6, companyCount: 30, topHolder: { name: 'Example Co' }, health: structuredClone(s.auto.supply.health) };
+  s.auto.ratio.range365 = { status: 'observed', positionPct: 22, low: .0258, high: .0361 };
+  s.auto.fees.reportedL1FeesToMarketCapPctPerYr = 0.1; s.auto.fees.ratioCoverage = { compatibleObservations: true };
+  const m = metrics(view(s));
+  // RWA stays flagged as an invalid series; everything else must carry a number.
+  for (const [id, metric] of Object.entries(m)) if (id !== 'rwa-share') assert.equal(typeof metric.value, 'number', id);
+  assert.equal(m['usd-debt-eth-share'].value, 13.1); assert.equal(m['usd-debt-eth-share'].status, 'observed');
+  assert.equal(m['lltv-gap'].value, 0); assert.equal(m['lltv-gap'].status, 'proxy');
+  assert.equal(m['staking-ratio'].value, 36.36); assert.equal(m['burn-offset'].value, 3.07);
+  assert.equal(m['treasury-holdings'].status, 'proxy'); assert.equal(m['ethbtc-range'].value, 22);
+});
+test('venue-level debt split follows its own health and the outer collateral freeze', () => {
+  const s = fresh();
+  s.auto.collateral.usdDebtByCollateral = { ethSharePct: 13.1, btcSharePct: 40.9, lltvGapPp: 0, health: { ...structuredClone(s.auto.collateral.health), status: 'partial' } };
+  assert.equal(metrics(view(s))['usd-debt-eth-share'].value, null);
+  s.auto.collateral.usdDebtByCollateral.health.status = 'ok'; s.auto.collateral.stale = true;
+  assert.equal(metrics(view(s))['usd-debt-eth-share'].status, 'stale');
+});
+test('an unobserved ETH/BTC range and a failed treasury source stay unknown', () => {
+  const s = fresh(); s.auto.ratio.range365 = { status: 'unknown', positionPct: 50 };
+  const m = metrics(view(s));
+  assert.equal(m['ethbtc-range'].value, null); assert.equal(m['treasury-holdings'].value, null); assert.equal(m['treasury-holdings'].status, 'unknown');
 });
 test('legacy asOf remains fetch time and never becomes observedAt', () => {
   const h = groupHealth(latest, '_market', AS_OF); assert.equal(h.observedAt, null); assert.equal(h.fetchedAt, latest.auto._market.asOf);

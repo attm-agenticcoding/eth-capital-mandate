@@ -1,3 +1,17 @@
+# 2026-11-11 — Pathway signals (pathway-signals-v1)
+
+Evidence framework v2 is unchanged in meaning; this adds observable readings and a notification layer on top of it.
+
+- Added nine pathway signals, each reading one observable field, with state crossings pushed to ntfy (`NTFY_TOPIC` secret). No aggregate, probability or trade instruction; missing or stale data never moves a state
+- New readings: Morpho USD-stable debt split by collateral family (exact within the venue), ETH vs BTC debt-weighted LLTV gap, effective staking share, 30-day burn against gross issuance, ETH/BTC position in its 365-day range, public-company ETH holdings (fixed cohort for flow), EIP-8363 status
+- Metric cards now show only readings the pipeline can observe. The seven by-design unknowns moved to each section's evidence gaps; none of them was given a number
+- Stablecoin cohort rule: additions are accepted; a removal is accepted only when its last accepted balance is known and at most 0.05% of the prior total, or when reviewed in code. This releases a lock held since 2026-10-14, caused by a chain that last held 488 USD leaving the upstream list, during which the strict Ethereum share went from 50.9% to 49.6% unseen
+- Signal state is seeded from this repository's own archived snapshot commits (2026-10-06 onward), recomputed point in time. `data/history.*` is not rewritten
+- Added a pull-request workflow that runs the regressions and a live-source dry run without writing data
+- Not measured, and listed as gaps: spot ETF holdings, validator queues, cross-protocol collateral attribution
+
+---
+
 # 2026-10-06 — Evidence framework v2
 
 - Replaced CHI / price probabilities / exit voting with four separate evidence panels

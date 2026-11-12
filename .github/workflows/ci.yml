@@ -1,0 +1,33 @@
+name: ci
+
+# Checks a pull request without touching data/ or Pages. The last step requests the
+# live sources so a change to ingestion is exercised against real responses before merge.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Regression tests, lint and build
+        run: npm run check
+
+      - name: Live source dry run (nothing is written, committed or pushed)
+        run: |
+          node scripts/fetch.mjs --dry-run --out "$RUNNER_TEMP/snapshot.json"
+          node scripts/verify-data.mjs "$RUNNER_TEMP/snapshot.json"
+          node scripts/signals.mjs --dry-run --snapshot "$RUNNER_TEMP/snapshot.json"
