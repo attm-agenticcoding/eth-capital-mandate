@@ -18,6 +18,9 @@ const groups = {
   _market: ['价格与波动率', 'coingecko', 36],
   collateral: ['借贷市场代理数据', 'defillama_collateral', 48],
   morphoFinance: ['Morpho 融资子样本', 'collateral_morpho', 48],
+  usdDebt: ['Morpho 美元债务抵押结构', 'collateral_Morpho', 48],
+  treasuries: ['上市公司 ETH 持仓', 'coingecko_treasury_eth', 96],
+  policy: ['发行政策提案状态', 'eip_8363', 96],
   restaking: ['再质押协议 TVL', 'defillama_restaking', 48],
   supply: ['ETH 供给与原生质押', 'ultrasound', 48],
   fees: ['网络费用', 'growthepie', 96],
@@ -37,11 +40,16 @@ const source = {
   stablecoins: { label: 'DefiLlama Stablecoins', url: 'https://defillama.com/stablecoins' },
   chains: { label: 'DefiLlama Chains', url: 'https://defillama.com/chains' },
   rwa: { label: 'DefiLlama RWA 方法', url: 'https://docs.llama.fi/real-world-assets/real-world-assets/methodology-and-metrics' },
+  morphoMarkets: { label: 'Morpho 市场数据', url: 'https://app.morpho.org/ethereum/borrow' },
+  treasuries: { label: 'CoinGecko 上市公司持仓', url: 'https://www.coingecko.com/en/treasuries/ethereum' },
+  policy: { label: 'EIP-8363', url: 'https://eips.ethereum.org/EIPS/eip-8363' },
 };
+// Measures nested inside the collateral group that carry their own health.
+const subgroups = { morphoFinance: 'morphoFinance', usdDebt: 'usdDebtByCollateral' };
 
 export function groupHealth(snapshot, key, asOf = new Date().toISOString()) {
   const [label, sourceKey, defaultTtl] = groups[key] || [key, key, 48];
-  const data = key === 'morphoFinance' ? snapshot?.auto?.collateral?.morphoFinance : snapshot?.auto?.[key];
+  const data = subgroups[key] ? snapshot?.auto?.collateral?.[subgroups[key]] : snapshot?.auto?.[key];
   const native = data?.health || {};
   const origin = snapshot?.meta?.sources?.find((s) => s.key === sourceKey);
   const legacy = snapshot?.schemaVersion !== SCHEMA_VERSION;
@@ -66,7 +74,7 @@ export function groupHealth(snapshot, key, asOf = new Date().toISOString()) {
     }
   }
   if (data?.stale && status === 'ok') { status = 'stale'; reason = '整组沿用末次有效数据，不能由子字段 ok 覆盖'; }
-  if (key === 'morphoFinance' && status !== 'invalid' && (snapshot?.auto?.collateral?.stale || snapshot?.auto?.collateral?.health?.status === 'stale')) {
+  if (subgroups[key] && status !== 'invalid' && (snapshot?.auto?.collateral?.stale || snapshot?.auto?.collateral?.health?.status === 'stale')) {
     status = 'stale'; reason = '父数据组沿用旧样本，子字段不能自行恢复为新观测';
   }
   if (key === 'collateral' && data?.morphoOk === false && status === 'ok') {
@@ -137,7 +145,7 @@ export function buildEvidence(snapshot = {}, history = [], { asOf = new Date().t
   };
   function metric({ id, label, value, unit, key, status = 'observed', precision = 1, src, detail, caveat = '' }) {
     const n = finite(value);
-    const badRange = n !== null && ((['usd', 'eth', 'count'].includes(unit) && n < 0) || (['stable-strict-share', 'rwa-share', 'morpho-lltv', 'drawdown'].includes(id) && (n < 0 || n > 100)) || (id === 'btc-correlation' && Math.abs(n) > 1));
+    const badRange = n !== null && ((['usd', 'eth', 'count'].includes(unit) && n < 0) || (['stable-strict-share', 'rwa-share', 'morpho-lltv', 'drawdown', 'staking-ratio', 'usd-debt-eth-share', 'usd-debt-btc-share', 'ethbtc-range'].includes(id) && (n < 0 || n > 100)) || (id === 'burn-offset' && n < 0) || (id === 'btc-correlation' && Math.abs(n) > 1));
     if (badRange) status = 'invalid';
     const effective = status === 'invalid' ? 'invalid' : n === null ? 'unknown' : key ? healthStatus(key, status) : status;
     const h = hg[key];
@@ -153,53 +161,61 @@ export function buildEvidence(snapshot = {}, history = [], { asOf = new Date().t
   const feesFresh = hg.fees.status === 'ok' && hg._market.status === 'ok';
   const feeMcap = versioned && feesFresh ? finite(fees.reportedL1FeesToMarketCapPctPerYr) : null;
   const rwaValidated = versioned && auto.rwa?.coverageValidated === true && auto.rwa?.health?.status === 'ok';
+  const usdDebt = collateral.usdDebtByCollateral || {};
+  const treasuries = auto.treasuries || {}, range = auto.ratio?.range365 || {};
   const sections = [
-    { id: 'holding', title: '谁必须持有 ETH', question: '持有是在提供不可替代的服务，还是只在追逐补贴？',
-      description: '区分原生质押、底层资产、有效安全承诺与实际抵押融资。规模本身不等于需求强度。',
+    { id: 'holding', title: '谁必须持有 ETH', question: '谁在锁定 ETH，这种锁定随链上金融变大而变多吗？',
+      description: '质押是唯一只能用 ETH 完成的事，但协议并不要求质押量随被保护的资产增长。上市公司持仓是近一年最大的边际买家，属于可逆的自愿持有。',
       metrics: [
+        metric({ id: 'staking-ratio', label: '质押率', value: versioned ? s.stakedEffectiveSharePct : null, unit: 'pct', key: 'supply', precision: 2, src: source.supply,
+          detail: '共识层有效质押余额 ÷ ETH 总供给', caveat: '由质押收益驱动；高质押率说明持有人愿意锁定，不说明链上金融需要它' }),
         metric({ id: 'native-stake', label: '原生质押有效余额', value: s.stakedEffectiveEth, unit: 'eth', key: 'supply', precision: 0, src: source.supply,
           detail: '共识层有效质押余额，是可观察的 ETH 安全资本', caveat: '不等于第三方付费安全需求；奖励包含发行与风险补偿' }),
+        metric({ id: 'treasury-holdings', label: '上市公司 ETH 持仓', value: versioned ? treasuries.totalHoldingsEth : null, unit: 'eth', key: 'treasuries', status: 'proxy', precision: 0, src: source.treasuries,
+          detail: treasuries.topHolder?.name ? `CoinGecko 跟踪的 ${treasuries.companyCount ?? '—'} 家公司合计；最大持有者 ${treasuries.topHolder.name}` : 'CoinGecko 跟踪的上市公司披露持仓合计',
+          caveat: '来自公司披露，有滞后；名单变动会改变合计，方向信号只看固定样本。不含 ETF、DAO 与私人持有' }),
         metric({ id: 'restaking-tvl', label: '再质押协议 TVL', value: auto.restaking?.totalUsd, unit: 'usd', key: 'restaking', status: 'proxy', src: source.restaking,
           detail: 'EigenLayer / Symbiotic / Karak 的美元资产存量', caveat: '可能包含非 ETH 资产及重复底层敞口；不换算为真实 ETH 数量' }),
-        metric({ id: 'underlying-eth', label: '去重后的再质押 ETH', value: versioned ? auto.restaking?.underlyingEth : null, unit: 'eth', key: 'restaking', precision: 0, src: source.eigen,
-          detail: '需要逐资产数量、兑换率与跨协议底层去重', caveat: '美元 TVL ÷ ETH 价格不能替代该测量' }),
-        metric({ id: 'slashable-eth', label: '有效可罚没 ETH 分配', value: versioned ? auto.restaking?.slashableEth : null, unit: 'eth', key: 'restaking', precision: 0, src: source.eigen,
-          detail: '需要生效的服务分配、注册状态、罚没条件与去重', caveat: '入池、委托、分配和实际可罚没是不同状态' }),
-        metric({ id: 'real-collateral', label: '支持实际非 ETH 债务的 ETH', value: null, unit: 'eth', src: source.aave,
-          detail: '需要账户级抵押启用状态、债务和多抵押分配口径', caveat: 'Aave 池内余额不等于实际使用的抵押品' }),
-      ], gaps: [gap('从资本供给走向真实需求', '目前不能判断多少资本在补贴结束后仍被付费服务需要', '接入服务分配、奖励来源、底层数量与 90 / 180 日留存')] },
+      ], gaps: [
+        gap('去重后的再质押 ETH 与有效可罚没分配', '美元 TVL ÷ ETH 价格不是底层 ETH；入池、委托、分配和实际可罚没是不同状态', '逐资产数量与兑换率、跨协议去重、生效的服务分配与罚没条件'),
+        gap('支持实际非 ETH 债务的 ETH（跨协议）', 'Aave 这类资金池无法把债务归到某一种抵押品；池内余额不等于实际使用的抵押品', '账户级抵押启用状态、债务与多抵押分配口径'),
+        gap('现货 ETF 与验证者进出队列', '没有经核验的免密钥数据源', '接入可核验的 ETF 持仓与信标链队列接口后再加入'),
+      ] },
     { id: 'fees', title: '谁实际付费', question: '有多少收入来自真实客户，最后归谁？',
-      description: '网络手续费、销毁、发行、验证者收入与补贴分开看。任何一项都不单独等于持有人现金流。',
+      description: '网络手续费、销毁、发行分开看。任何一项都不单独等于持有人现金流。',
       metrics: [
         metric({ id: 'l1-fees', label: 'L1 手续费 / 日', value: fees.l1Fees30dAvgUsd, unit: 'usd', key: 'fees', precision: 0, src: source.fees,
           detail: '最近 30 日记录的日均手续费', caveat: '来源报告的 L1 执行费用，未包含 blob 费用；未扣运营成本，不是持有人利润' }),
         metric({ id: 'fees-mcap', label: '已报告 L1 费用 / ETH 市值', value: feeMcap, unit: 'pct', key: 'fees', precision: 3, src: source.fees,
           detail: 'growthepie 报告的 Ethereum 费用 30 日均值年化 / ETH 市值', caveat: '不另加跨 DA 的 blob costs；需有效时点匹配，不是股息率或目标估值' }),
+        metric({ id: 'burn-offset', label: '销毁 ÷ 发行 · 30 日', value: versioned ? s.burnOffsetPct : null, unit: 'pct', key: 'supply', precision: 2, src: source.supply,
+          detail: '30 日销毁量 ÷ 同期总发行量；100% 为打平', caveat: 'Vitalik 在 2026-11-08 以 10% 作为"低于也不必介怀"的参照线；那是他的口径，不是本看板的目标值' }),
         metric({ id: 'burn-rate', label: '销毁 / 总供给 · 年化', value: annualRate(s.burn30dEth), unit: 'pct', key: 'supply', precision: 3, src: source.supply,
           detail: '30 日 burn 年化后除以当前总供给', caveat: '销毁归属与验证者 tips / MEV 不同，不重复相加为股息' }),
         metric({ id: 'net-issuance', label: '净发行 / 总供给 · 年化', value: annualRate(s.net30dEth), unit: 'pct', key: 'supply', precision: 3, src: source.supply,
           detail: '30 日净供应变化年化，不是长期货币政策预测', caveat: '发行奖励不构成整个 ETH 持有人部门的外部新增现金流' }),
-        metric({ id: 'avs-revenue', label: 'AVS 外部客户净支付', value: null, unit: 'usd', src: source.eigen,
-          detail: '需将服务客户付款与 token 排放、积分、关联方补贴分离', caveat: '尚无经核对的覆盖完整数据，不能以 TVL 推算' }),
-        metric({ id: 'subsidy-share', label: '安全服务补贴依赖率', value: null, unit: 'pct', src: source.eigen,
-          detail: '需要统一会计边界下的客户收入与补贴来源', caveat: '缺数据不表示没有付费，也不表示有机需求已成立' }),
-      ], gaps: [gap('资金归属与补贴剥离', '目前网络费用可读，第三方安全服务的外部净支付尚不可识别', '按真实付款方和收益归属建立收入账本，分别列示发行、手续费、补贴与成本')] },
-    { id: 'stress', title: '压力下能否被替代', question: '在可比风险下，ETH 的融资服务是否仍有优势？',
-      description: '价格跌幅只描述风险；抵押便利价值需要同负债、同期限、同风险条件下的可执行融资证据。',
+      ], gaps: [gap('第三方安全服务的外部净支付与补贴依赖', '网络费用可读，AVS 客户付款与 token 排放、积分、关联方补贴尚不可分离', '按真实付款方和收益归属建立收入账本，分别列示发行、手续费、补贴与成本')] },
+    { id: 'stress', title: '压力下能否被替代', question: '借美元的人押的是 ETH，还是别的东西？',
+      description: 'Morpho 的每个市场只有一种抵押品和一种贷出资产，所以"哪种抵押品撑起了多少美元债务"在这个场所内可以精确归属。它是一个场所的事实，不是全市场份额。',
       metrics: [
+        metric({ id: 'usd-debt-eth-share', label: '美元债务中 ETH 类抵押占比', value: versioned ? usdDebt.ethSharePct : null, unit: 'pct', key: 'usdDebt', precision: 1, src: source.morphoMarkets,
+          detail: 'Morpho 以太坊主网、贷出资产为美元稳定币的全部挂牌市场', caveat: '单一场所内精确归属；不代表 Aave 等资金池，也不是全市场份额' }),
+        metric({ id: 'usd-debt-btc-share', label: '美元债务中 BTC 类抵押占比', value: versioned ? usdDebt.btcSharePct : null, unit: 'pct', key: 'usdDebt', precision: 1, src: source.morphoMarkets,
+          detail: '同一口径下由 WBTC、cbBTC 等 BTC 类抵押支持的部分', caveat: 'BTC 类抵押都是托管或桥接包装；份额高说明借款人接受这层信任假设' }),
+        metric({ id: 'morpho-borrow', label: 'ETH 类抵押支持的美元债务', value: versioned ? morpho.totalBorrowUsd : null, unit: 'usd', key: 'morphoFinance', src: source.morpho,
+          detail: 'ETH 类抵押、美元稳定币负债市场的实际借款', caveat: '需固定样本与地址级资产核对；不能与其他协议池内余额混合' }),
+        metric({ id: 'lltv-gap', label: 'ETH − BTC 债务加权 LLTV', value: versioned ? usdDebt.lltvGapPp : null, unit: 'pp', key: 'usdDebt', status: 'proxy', precision: 2, src: source.morpho,
+          detail: '同一口径下两类抵押的债务加权清算阈值之差；0 表示 ETH 没有折扣特权', caveat: '清算阈值由市场创建者设定，不是 Aave haircut，也不是便利收益' }),
+        metric({ id: 'morpho-lltv', label: 'Morpho 债务加权 LLTV', value: versioned ? morpho.debtWeightedLltvPct : null, unit: 'pct', key: 'morphoFinance', status: 'proxy', src: source.morpho,
+          detail: 'ETH 类抵押、美元稳定币负债且实际有借款的市场', caveat: '仅为该市场样本的清算阈值；不是 Aave LTV、整体 haircut 或便利收益' }),
         metric({ id: 'drawdown', label: '距历史高点回撤', value: auto.eth?.drawdownFromPeakPct, unit: 'pct', key: '_market', src: source.market,
           detail: '相对 CoinGecko 报告的历史最高价', caveat: '不是一个已完成压力事件的通过 / 失败判定' }),
         metric({ id: 'rv365', label: '365 日实现波动率', value: auto.vol?.d365Pct, unit: 'pct', key: '_market', src: source.market,
           detail: '日对数收益的年化实现波动率', caveat: '不把两个 91 日波动率区间当作 RV365 连续半年达标' }),
-        metric({ id: 'morpho-lltv', label: 'Morpho 债务加权 LLTV', value: versioned ? morpho.debtWeightedLltvPct : null, unit: 'pct', key: 'morphoFinance', status: 'proxy', src: source.morpho,
-          detail: 'ETH 类抵押、美元稳定币负债且实际有借款的市场', caveat: '仅为该市场样本的清算阈值；不是 Aave LTV、整体 haircut 或便利收益' }),
-        metric({ id: 'morpho-borrow', label: '上述市场实际借款', value: versioned ? morpho.totalBorrowUsd : null, unit: 'usd', key: 'morphoFinance', src: source.morpho,
-          detail: '与 LLTV 完全相同市场样本的美元债务', caveat: '需固定样本与地址级资产核对；不能与其他协议池内余额混合' }),
-        metric({ id: 'specialness', label: '可比抵押融资利差', value: null, unit: 'pct', src: source.morpho,
-          detail: 'ETH 对 BTC / 稳定币 / tokenized Treasury 的匹配比较', caveat: '期限、利用率、清算、oracle、托管和法律风险必须控制' }),
-        metric({ id: 'stress-retention', label: '压力事件数量留存', value: null, unit: 'pct', src: source.aave,
-          detail: '固定资产价格与市场 cohort，区分净提款、清算及替代', caveat: '不使用旧美元份额或今天余额回填的历史生成结论' }),
-      ], gaps: [gap('抵押品 specialness 研究', '当前无法分离抵押便利收益、风险溢价和补贴', '建立固定市场样本；围绕参数变化、补贴结束和压力事件比较融资容量、利差与实际损失')] },
+      ], gaps: [
+        gap('可比抵押融资利差', '当前无法分离抵押便利收益、风险溢价和补贴', '固定 debt asset、期限、利用率与风险条件，比较 ETH / BTC / 稳定币 / tokenized Treasury 的可执行融资成本'),
+        gap('压力事件数量留存', '美元份额变化混有价格效应，不能识别数量替代', '固定资产价格与市场 cohort，区分净提款、清算及替代'),
+      ] },
     { id: 'context', title: '生态背景', question: '网络采用提供背景，但价值是否流向 ETH 仍需另证',
       description: '这些数据不能被加总成 SoV 分数。主网与 rollup、资产存量与交易流量分别标注。',
       metrics: [
@@ -207,6 +223,8 @@ export function buildEvidence(snapshot = {}, history = [], { asOf = new Date().t
           detail: '按来源统计的流通美元稳定币', caveat: '存量不是支付交易额，也不是持有 ETH 的必要数量' }),
         metric({ id: 'stable-strict-share', label: 'Ethereum 严格口径稳定币份额', value: auto.stablecoins?.ethAlignedSharePctStrict, unit: 'pct', key: 'stablecoins', status: 'proxy', src: source.stablecoins,
           detail: '主网与所列 Ethereum 结算 / DA rollup 的存量份额', caveat: '固定分类清单需要持续核对；份额不是 ETH 收入' }),
+        metric({ id: 'ethbtc-range', label: 'ETH/BTC 在 365 日区间的位置', value: versioned && range.status === 'observed' ? range.positionPct : null, unit: 'pct', key: '_market', precision: 0, src: source.market,
+          detail: '0% 为 365 日最低，100% 为最高；实时比值对照日度配对观测', caveat: '价格共振与相对强弱都不是储值溢价的证据' }),
         metric({ id: 'eth-mainnet-tvl', label: 'Ethereum 主网 DeFi TVL', value: auto.chains?.ethTvl, unit: 'usd', key: 'chains', status: 'proxy', src: source.chains,
           detail: '明确为主网，未与 Solana 比较时偷偷计入整个 L2 体系', caveat: '美元 TVL 受价格、借贷循环与统计覆盖影响' }),
         metric({ id: 'btc-correlation', label: 'ETH / BTC 收益相关性 · 90 日', value: auto.correlation?.now, unit: 'ratio', key: '_market', precision: 3, src: source.market,

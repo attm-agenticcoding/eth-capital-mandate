@@ -20,6 +20,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      signals: ${{ steps.signals.outcome }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,11 +41,23 @@ jobs:
       - name: Verify versioned snapshot and appended history
         run: npm run verify-data
 
+      # State crossings are pushed here, on the machine that just observed them.
+      # Without the NTFY_TOPIC secret the evaluation still runs and nothing is sent.
+      # A failure must not cost the data refresh, so it is reported by the job below.
+      - name: Evaluate pathway signals and push crossings
+        id: signals
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          npm run signals
+          npm run verify-data
+
       - name: Commit data — the git log IS the longitudinal record
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/latest.json data/history.ndjson data/history.json
+          git add data/latest.json data/history.ndjson data/history.json data/signals.json
           if git diff --staged --quiet; then
             echo "no data changes"
           else
@@ -72,3 +86,12 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
 
+  # Keeps a broken signal evaluation visible without holding back data or the site.
+  signals-status:
+    needs: build
+    if: needs.build.outputs.signals == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::Pathway signal evaluation failed. Data and site were still refreshed; see the build job log."
+          exit 1

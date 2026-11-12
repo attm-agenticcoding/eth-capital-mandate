@@ -40,6 +40,7 @@ function Icon({ name, size = 20, ...props }) {
     quality: <><path d="M4 20V8m5 12V4m6 16v-8m5 8V6M2 20h20" /></>,
     chevron: <path d="m7 10 5 5 5-5" />,
     minus: <path d="M5 12h14" />,
+    pulse: <path d="M3 12h4l3-7 4 14 3-7h4" />,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name] || paths.info}</svg>;
 }
@@ -83,6 +84,8 @@ function valueDisplay(metric) {
     return `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: digits }).format(value / divider)}${suffix}`;
   }
   if (unit === 'eth' && Math.abs(value) >= 1e6) return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: Math.max(2, digits) }).format(value / 1e6)}M`;
+  // A difference in percentage points always shows its sign, including an exact zero.
+  if (unit === 'pp') return `${value > 0 ? '+' : value < 0 ? '−' : '±'}${new Intl.NumberFormat('en-US', { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(Math.abs(value))}`;
   return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: digits, minimumFractionDigits: unit === 'ratio' ? digits : 0 }).format(value)}${unit === 'pct' ? '%' : ''}`;
 }
 
@@ -99,7 +102,7 @@ function SourceLink({ source, fallback = '来源未提供' }) {
 
 function MetricCard({ metric, showMethodology, isContext }) {
   const blank = metric.value == null || typeof metric.value !== 'number' || !Number.isFinite(metric.value) || ['unknown', 'invalid'].includes(metric.status);
-  const unitLabels = { usd: 'USD', eth: 'ETH', count: '项', ratio: '比率' };
+  const unitLabels = { usd: 'USD', eth: 'ETH', count: '项', ratio: '比率', pp: '百分点' };
   return <article className={`metric-card ${blank ? 'metric-blank' : ''} ${isContext ? 'metric-context' : ''}`}>
     <div className="metric-topline"><h3>{metric.label}</h3><Badge status={metric.status} /></div>
     <div className="metric-reading"><span className="metric-number" title={!blank ? `${metric.value.toLocaleString('en-US')} ${metric.unit || ''}` : undefined}>{valueDisplay(metric)}</span>{!blank && unitLabels[metric.unit] && <span className="metric-unit">{unitLabels[metric.unit]}</span>}{blank && <span className="metric-blank-caption">{metric.status === 'invalid' ? '不作为有效读数' : '尚无有效测量'}</span>}</div>
@@ -154,6 +157,25 @@ function MarketContext({ market = {} }) {
   return <div className="market-context"><span className="market-label">市场背景</span>{items.map((item) => <div className="market-item" key={item.label}><span>{item.label}</span><strong>{valueDisplay(item)}</strong></div>)}<span className="market-disclaimer">价格共振 ≠ 储值溢价证据{market.observedAt ? <span>观测 {formatTime(market.observedAt)} UTC</span> : <span>观察时间未提供{market.fetchedAt ? ` · 采集 ${formatTime(market.fetchedAt)} UTC` : ''}</span>}</span></div>;
 }
 
+const SIGNAL_TONE = { supportive: 'green', adverse: 'red', neutral: 'neutral' };
+
+function SignalsPanel({ signals, showMethodology }) {
+  if (!signals) return null;
+  return <section id="signals" className="signals-panel" aria-labelledby="signals-title">
+    <div className="signals-head"><div className="signals-title"><Icon name="pulse" size={19} /><h2 id="signals-title">路径信号</h2></div><span className={`signals-push ${signals.push === 'ntfy' ? 'is-on' : ''}`}><span className="badge-dot" />{signals.push === 'ntfy' ? '跨档推送已接通' : '跨档推送未配置'}</span></div>
+    <p className="signals-intro">链上金融变大，会不会变成对 ETH 的持有需求？下面每条信号只盯一个可观测读数，对应这条因果链上的一环。“支持 / 不利”只就这一环而言：不加总、不换算成概率，也不是交易指令。读数缺失或过期时状态沿用，不换档。</p>
+    {!signals.usable && <p className="signals-empty">信号状态尚未生成，等待下一次数据更新。</p>}
+    <ul className="signals-list">{signals.rows.map((row) => <li key={row.id} className="signal-row">
+      <div className="signal-main"><span className="signal-path">{row.pathLabel}</span><div className="signal-text"><h3>{row.label}</h3><p>{row.question}</p></div></div>
+      <div className="signal-state"><span className={`evidence-badge badge-${SIGNAL_TONE[row.tone] || 'neutral'}`}><span className="badge-dot" />{row.stateLabel}</span>{row.state && <span className="signal-tone">对这一环：{row.toneLabel}</span>}</div>
+      <div className="signal-reading"><strong>{row.reading}</strong><span>{[row.since ? `自 ${row.since} 起` : null, row.state && !row.dataOk ? '本次无可用读数，状态沿用' : null, row.pending ? `待确认：${row.pending.label}（${row.pending.days}/${row.pending.needed} 日）` : null].filter(Boolean).join(' · ')}</span></div>
+      {showMethodology && <p className="signal-rule"><span>规则</span>{row.rule}</p>}
+    </li>)}</ul>
+    {signals.events.length > 0 && <div className="signals-events"><span className="signals-events-label">最近跨档</span><ul>{signals.events.map((event, i) => <li key={`${event.t}-${i}`}><time>{formatTime(event.t, true)}</time><span>{event.label}</span><b className={`signal-event-${SIGNAL_TONE[event.tone] || 'neutral'}`}>{event.from} → {event.to}</b></li>)}</ul></div>}
+    <p className="signals-foot">{signals.updatedAt ? `状态更新 ${formatTime(signals.updatedAt)} UTC · ` : ''}规则 {signals.rulesVersion} · 打开“显示口径”查看每条规则与参数</p>
+  </section>;
+}
+
 function Methodology({ evidence }) {
   const history = evidence.history || {};
   const diagnostics = evidence.diagnostics || [];
@@ -165,7 +187,7 @@ function Methodology({ evidence }) {
   </section>;
 }
 
-export function EvidenceDashboard({ evidence }) {
+export function EvidenceDashboard({ evidence, signals }) {
   const [showMethodology, setShowMethodology] = useState(false);
   const [activeSection, setActiveSection] = useState('holding');
   const sections = evidence.sections || [];
@@ -190,11 +212,11 @@ export function EvidenceDashboard({ evidence }) {
     <header className="site-header"><div className="header-inner"><a className="wordmark" href="#top" aria-label="ETH 研究观察首页"><EthMark /><span>ETH<span className="wordmark-divider" /><span className="wordmark-caption">研究观察</span></span></a><div className="header-note"><span className="live-dot" />证据优先 · 独立核验</div><div className="header-actions"><a className="header-method-link" href="#methodology">阅读方法<Icon name="arrow" size={15} /></a><ThemeSelector /></div></div></header>
     <section className="hero" id="top"><div className="hero-inner"><div className="hero-copy"><div className="hero-kicker"><span className="hero-kicker-line" />ETHEREUM RESEARCH MONITOR</div><h1>ETH 储值与<br className="desktop-break" />抵押需求观察<span className="heading-dot">.</span></h1><p className="hero-description">回到三个可检验的问题：谁需要持有，谁愿意付费，<br className="desktop-break" />以及压力来临时，谁仍然选择 ETH。</p><div className="hero-metadata"><span>证据框架 {evidence.version || 'v2'}</span><span className="metadata-divider" /><span>快照 {formatTime(evidence.generatedUtc)} UTC</span></div></div><aside className="identification-card" aria-label="当前研究识别状态"><div className="identification-top"><span>当前识别状态</span><Icon name="info" size={16} /></div><h2>未建立识别</h2><p>现有读数尚不足以单独识别<br />ETH 的储值溢价。</p><div className="identification-line" /><div className="evidence-inventory"><div><strong>{observedCount}</strong><span>项直接观测</span></div><div><strong>{proxyCount}</strong><span>项代理量</span></div><div><strong>{unknownCount}</strong><span>项待补 / 异常</span></div></div><div className="inventory-note">证据项数仅用于导航，不是评分或投资判断</div><EthMark className="hero-watermark" /></aside></div></section>
     <div className="navigation-shell"><nav className="section-navigation" aria-label="研究章节"><div className="section-links">{SECTIONS.map((section, index) => <a className={activeSection === section.id ? 'active' : ''} key={section.id} href={`#${sections[index]?.id || section.id}`} onClick={() => setActiveSection(section.id)}><span>0{index + 1}</span>{section.short}</a>)}</div><div className="navigation-controls"><button className={`methodology-toggle ${showMethodology ? 'is-active' : ''}`} type="button" aria-pressed={showMethodology} onClick={() => setShowMethodology(!showMethodology)}><Icon name="book" size={16} /><span>显示口径</span><span className="toggle-track"><span /></span></button></div></nav></div>
-    <main id="main-content" className="main-content"><MarketContext market={evidence.market} /><DataQuality quality={evidence.quality} /><div className="evidence-legend"><span>读数标记</span><Badge status="observed" /><Badge status="proxy" /><Badge status="unknown" /><Badge status="stale" /><Badge status="invalid" /><span className="legend-time">所有时间均为 UTC</span></div>
+    <main id="main-content" className="main-content"><MarketContext market={evidence.market} /><SignalsPanel signals={signals} showMethodology={showMethodology} /><DataQuality quality={evidence.quality} /><div className="evidence-legend"><span>读数标记</span><Badge status="observed" /><Badge status="proxy" /><Badge status="unknown" /><Badge status="stale" /><Badge status="invalid" /><span className="legend-time">所有时间均为 UTC</span></div>
       {sections.map((section, index) => <ResearchSection key={section.id || index} section={section} index={index} showMethodology={showMethodology} />)}
       {!sections.length && <div className="empty-state"><Icon name="info" size={26} /><h2>暂无可用研究数据</h2><p>数据模型尚未提供有效章节。本页不会用旧版评分或默认值代替。</p></div>}
       <Methodology evidence={evidence} />
     </main>
-    <footer className="site-footer"><div><a className="footer-brand" href="#top"><EthMark />ETH 研究观察</a><p>只呈现可追溯的证据，保留尚未回答的问题。</p></div><div className="footer-notes"><span>研究用途 · 非投资建议</span><span>不输出价格目标、成功概率或自动交易信号</span><a href="#top">回到顶部 ↑</a></div></footer>
+    <footer className="site-footer"><div><a className="footer-brand" href="#top"><EthMark />ETH 研究观察</a><p>只呈现可追溯的证据，保留尚未回答的问题。</p></div><div className="footer-notes"><span>研究用途 · 非投资建议</span><span>不输出价格目标、成功概率或交易指令；路径信号只报告事实跨档</span><a href="#top">回到顶部 ↑</a></div></footer>
   </div>;
 }

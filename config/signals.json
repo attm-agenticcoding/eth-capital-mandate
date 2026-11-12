@@ -1,0 +1,17 @@
+{
+  "_note": "路径信号的全部参数，改这里不用改代码。数字分两类：论纲自带的结构线（过半、换位、Vitalik 自己给的 10% 参照线），和防抖用的噪声下限（取自各序列自身的日变动）。每个数字的来历见 docs/signals-v1.md。",
+  "rulesVersion": "pathway-signals-v1",
+  "page": "https://attm-agenticcoding.github.io/eth-capital-mandate/",
+  "seriesMaxDays": 400,
+  "signals": {
+    "collateral-rank": { "line": 1, "confirmDays": 3 },
+    "collateral-share": { "windowDays": 90, "minObs": 30, "k": 3, "floor": 0.6, "confirmDays": 3 },
+    "lltv-privilege": { "tolerance": 0.5, "confirmDays": 3 },
+    "staking-flow": { "windowDays": 30, "deadband": 0.05, "maxLagDays": 5, "confirmDays": 3 },
+    "treasury-flow": { "windowDays": 30, "deadband": 0.1, "maxLagDays": 5, "confirmDays": 3 },
+    "stable-majority": { "line": 50, "confirmDays": 3 },
+    "burn-line": { "line": 10, "confirmDays": 3 },
+    "ethbtc-range": { "episodeDays": 7, "confirmDays": 1 },
+    "issuance-eip": { "confirmDays": 1 }
+  }
+}

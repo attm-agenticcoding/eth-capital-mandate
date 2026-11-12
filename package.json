@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "fetch": "node scripts/fetch.mjs",
+    "fetch:dry": "node scripts/fetch.mjs --dry-run",
+    "signals": "node scripts/signals.mjs",
+    "signals:dry": "node scripts/signals.mjs --dry-run",
     "selfcheck": "node --test scripts/selfcheck.mjs",
     "verify-data": "node scripts/verify-data.mjs",
     "check": "npm run selfcheck && npm run lint && npm run build"

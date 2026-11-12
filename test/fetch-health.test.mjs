@@ -7,7 +7,11 @@ import { createFetchers, buildSnapshot, historyRow, run, appendHistory, bucketiz
 import { numberOrNull, sumComplete, observationTime, makeHealth, rv365Persistence, SCHEMA_VERSION, METHODOLOGY_VERSION } from '../src/lib/fetch-health.mjs';
 const NOW = '2026-10-06T00:00:00.000Z';
 const good = (value) => ({ ok: true, status: 200, json: async () => structuredClone(value) });
-const fail = { ok: false, status: 403, json: async () => ({}) };
+const goodText = (value) => ({ ok: true, status: 200, text: async () => value, json: async () => { throw new Error('not JSON'); } });
+const fail = { ok: false, status: 403, json: async () => ({}), text: async () => '' };
+const eipFile = (status = 'Draft', eip = 8363) => `---\neip: ${eip}\ntitle: Tapered Issuance Burn\nstatus: ${status}\ntype: Standards Track\ncategory: Core\ncreated: 2026-07-14\n---\n\n## Abstract\nstatus: Final\n`;
+const treasuryFixture = (overrides = {}) => ({ total_holdings: 1000, total_value_usd: 2.5e6, market_cap_dominance: 0.8,
+  companies: [{ name: 'Alpha', symbol: 'A', total_holdings: 700 }, { name: 'Beta', symbol: 'B', total_holdings: 200 }, { name: 'Gamma', symbol: 'G', total_holdings: 100 }], ...overrides });
 const noFetch = async () => fail;
 const health = (cohortId = null) => ({ status: 'ok', fetchedAt: '2026-10-05T18:00:00.000Z', observedAt: '2026-10-05T12:00:00.000Z', lastSuccessAt: '2026-10-05T18:00:00.000Z', ttlHours: 48, reason: null, cohortId, coverage: { expected: 3, received: 3 } });
 const factories = (fetchImpl, previous = {}) => createFetchers({ fetchImpl, previous, now: NOW, retries: 1, retryDelay: 0 });
@@ -242,6 +246,8 @@ test('shortened or sparse supply window cannot be called net30d or annualized', 
 });
 
 function allSourcesFixture(url) {
+  if (url.includes('/companies/public_treasury/ethereum')) return Promise.resolve(good(treasuryFixture()));
+  if (url.includes('raw.githubusercontent.com/ethereum/EIPs')) return Promise.resolve(goodText(eipFile()));
   if (url.includes('coingecko.com')) return marketFetch(url);
   if (url.includes('/aave-v3') || url.includes('/makerdao') || url.includes('morpho.org')) return collateralFetch(url);
   if (url.includes('stablecoinchains')) return Promise.resolve(good([
@@ -374,4 +380,99 @@ test('impossible calendar dates and timestamp coercions never become observation
   }
   assert.equal(observationTime('2024-02-29', NOW), '2024-02-29T00:00:00.000Z');
   assert.equal(observationTime('2026-10-05T12:30:01.234Z', NOW), '2026-10-05T12:30:01.234Z');
+});
+
+
+test('USD-stable debt is split by collateral family exactly within the venue', async () => {
+  const withBtc = [...morphoMarkets,
+    { marketId: 'btc-usdc', listed: true, lltv: '860000000000000000', loanAsset: { symbol: 'USDC' }, collateralAsset: { symbol: 'cbBTC' }, state: { collateralAssetsUsd: 900, borrowAssetsUsd: 300 } },
+    { marketId: 'rwa-usdc', listed: true, lltv: '915000000000000000', loanAsset: { symbol: 'USDC' }, collateralAsset: { symbol: 'PT-sUSDE' }, state: { collateralAssetsUsd: null, borrowAssetsUsd: 100 } }];
+  const fetchImpl = (url) => url.includes('morpho.org') ? Promise.resolve(good({ data: { markets: { items: withBtc } } })) : collateralFetch(url);
+  const split = (await factories(fetchImpl).collateral()).usdDebtByCollateral;
+  // ETH loops and the gold loan are not dollar credit; a missing collateral valuation does not matter here.
+  assert.equal(split.health.status, 'ok'); assert.equal(split.marketCount, 4); assert.equal(split.totalUsdDebt, 500);
+  assert.equal(split.ethSharePct, 20); assert.equal(split.btcSharePct, 60); assert.equal(split.otherSharePct, 20);
+  assert.equal(split.ethToBtcDebtRatio, 0.3333); assert.equal(split.ethDebtWeightedLltvPct, 86); assert.equal(split.btcDebtWeightedLltvPct, 86);
+  assert.equal(split.lltvGapPp, 0);
+  assert.match(split.basis, /Not a cross-protocol share/);
+});
+
+test('a missing borrow balance withholds the whole split instead of shrinking it', async () => {
+  const broken = [...morphoMarkets, { marketId: 'btc-usdc', listed: true, lltv: '860000000000000000', loanAsset: { symbol: 'USDC' }, collateralAsset: { symbol: 'cbBTC' }, state: { collateralAssetsUsd: 900, borrowAssetsUsd: null } }];
+  const fetchImpl = (url) => url.includes('morpho.org') ? Promise.resolve(good({ data: { markets: { items: broken } } })) : collateralFetch(url);
+  const split = (await factories(fetchImpl).collateral()).usdDebtByCollateral;
+  assert.equal(split.health.status, 'partial'); assert.equal(split.ethSharePct, null); assert.equal(split.totalUsdDebt, null); assert.equal(split.missingBorrow, 1);
+  const row = historyRow({ generatedUtc: NOW, auto: { collateral: { usdDebtByCollateral: { ...split, ethSharePct: 99 } } }, meta: { sources: [] } });
+  assert.equal(row.usdDebtEthSharePct, null);
+});
+
+test('stablecoin cohort accepts new chains and reviewed or immaterial removals only', async () => {
+  const rows = (names) => names.map((name) => ({ name, totalCirculatingUSD: { peggedUSD: name === 'Ethereum' ? 600 : name === 'Solana' ? 400 : 0 } }));
+  const first = await factories(async () => good(rows(['Ethereum', 'Solana', 'Dust']))).stablecoins();
+  assert.equal(first.health.status, 'ok'); assert.deepEqual(first.cohortBalances, { Ethereum: 600, Solana: 400, Dust: 0 });
+  // A new chain joins the denominator; a chain that last held nothing may leave it.
+  const grown = await factories(async () => good([...rows(['Ethereum', 'Solana']), { name: 'Arc', totalCirculatingUSD: { peggedUSD: 250 } }]), { auto: { stablecoins: first } }).stablecoins();
+  assert.equal(grown.health.status, 'ok'); assert.equal(grown.totalUsd, 1250); assert.equal(grown.cohortChanged, false);
+  assert.deepEqual(grown.cohortChange.addedChains, ['Arc']); assert.deepEqual(grown.cohortChange.droppedChains.map((d) => d.name), ['Dust']);
+  assert.equal(grown.health.cohortId, 'Arc|Ethereum|Solana');
+  // A chain that held 40% of the total cannot vanish silently.
+  const shrunk = await factories(async () => good(rows(['Ethereum'])), { auto: { stablecoins: grown } }).stablecoins();
+  assert.equal(shrunk.health.status, 'partial'); assert.equal(shrunk.totalUsd, null); assert.equal(shrunk.cohortReviewRequired, true);
+  assert.equal(shrunk.health.cohortId, 'Arc|Ethereum|Solana'); assert.deepEqual(shrunk.cohortBalances, grown.cohortBalances);
+  // The production lock: an expected cohort naming the reviewed chain, with no balances on record.
+  const locked = { auto: { stablecoins: { health: health('Ethereum|Penumbra|Solana'), totalUsd: null } } };
+  const released = await factories(async () => good(rows(['Ethereum', 'Solana'])), locked).stablecoins();
+  assert.equal(released.health.status, 'ok'); assert.equal(released.totalUsd, 1000); assert.equal(released.cohortChange.droppedChains[0].reviewed, true);
+});
+
+test('supply reports burn against gross issuance and the effective staking share', async () => {
+  const snapshot = await buildSnapshot({ fetchImpl: allSourcesFixture, now: NOW, retries: 1, retryDelay: 0 });
+  const supply = snapshot.auto.supply;
+  assert.equal(supply.issuance30dEth, 130); assert.equal(supply.burnOffsetPct, 76.923);
+  assert.equal(supply.stakedEffectiveSharePct, Number((supply.stakedEffectiveEth / supply.totalSupplyEth * 100).toFixed(3)));
+  const row = historyRow(snapshot);
+  assert.equal(row.burnOffsetPct, 76.923); assert.equal(row.issuanceEipStatus, 'Draft'); assert.equal(row.treasuryCohortEth, 1000);
+});
+
+test('ETH/BTC range is observed only with full daily coverage and compares the live ratio', async () => {
+  const market = await factories(marketFetch).market();
+  const range = market.ratio.range365;
+  assert.equal(range.status, 'observed'); assert.ok(range.coverageDays >= 360);
+  // The fixture ratio is constant at 2000/60000; the live quote of 2500/70000 sits above every daily point.
+  assert.equal(range.newHigh, true); assert.equal(range.positionPct, 100); assert.equal(range.daysSinceHigh, 0);
+  const sparse = (url) => url.includes('/bitcoin/market_chart?')
+    ? Promise.resolve(good({ prices: priceFixture('bitcoin').prices.filter((_, i) => i % 2 === 1) })) : marketFetch(url);
+  assert.equal((await factories(sparse).market()).ratio.range365.status, 'unknown');
+});
+
+test('treasury flow tracks a fixed cohort; a missing member withholds it', async () => {
+  const fetchOf = (body) => async (url) => url.includes('public_treasury') ? good(body) : fail;
+  const first = await factories(fetchOf(treasuryFixture())).treasuries();
+  assert.equal(first.health.status, 'ok'); assert.equal(first.totalHoldingsEth, 1000); assert.equal(first.cohortHoldingsEth, 1000);
+  assert.equal(first.health.cohortId, 'Alpha|Beta|Gamma'); assert.equal(first.topHolder.name, 'Alpha'); assert.equal(first.topHolderSharePct, 70);
+  // A newly tracked company raises the reported total but is not a purchase by the cohort.
+  const added = treasuryFixture({ total_holdings: 1500, companies: [...treasuryFixture().companies, { name: 'Delta', symbol: 'D', total_holdings: 500 }] });
+  const second = await factories(fetchOf(added), { auto: { treasuries: first } }).treasuries();
+  assert.equal(second.totalHoldingsEth, 1500); assert.equal(second.cohortHoldingsEth, 1000);
+  const gone = treasuryFixture({ companies: treasuryFixture().companies.slice(0, 2) });
+  const third = await factories(fetchOf(gone), { auto: { treasuries: second } }).treasuries();
+  assert.equal(third.health.status, 'partial'); assert.equal(third.cohortHoldingsEth, null); assert.deepEqual(third.cohortMissing, ['Gamma']);
+  assert.equal(third.health.cohortId, 'Alpha|Beta|Gamma');
+  const down = await factories(noFetch, { auto: { treasuries: first } }).treasuries();
+  assert.equal(down.health.status, 'stale'); assert.equal(down.cohortHoldingsEth, 1000);
+  assert.equal((await factories(noFetch).treasuries()).health.status, 'failed');
+  assert.equal((await factories(fetchOf({ total_holdings: 5, companies: 'none' })).treasuries()).health.status, 'failed');
+});
+
+test('issuance proposal status is read from front matter only and never guessed', async () => {
+  const fetchOf = (response) => async (url) => url.includes('eip-8363.md') ? response : fail;
+  const draft = await factories(fetchOf(goodText(eipFile('Draft')))).policy();
+  assert.equal(draft.health.status, 'ok'); assert.equal(draft.issuanceEipStatus, 'Draft'); assert.equal(draft.issuanceEip, 8363);
+  assert.equal((await factories(fetchOf(goodText(eipFile('Last Call')))).policy()).issuanceEipStatus, 'Last Call');
+  for (const body of [eipFile('Approved'), eipFile('Draft', 1559), 'status: Final', '']) {
+    const bad = await factories(fetchOf(goodText(body))).policy();
+    assert.equal(bad.health.status, 'failed', JSON.stringify(body.slice(0, 30))); assert.equal(bad.issuanceEipStatus, null);
+  }
+  const carried = await factories(noFetch, { auto: { policy: draft } }).policy();
+  assert.equal(carried.health.status, 'stale'); assert.equal(carried.issuanceEipStatus, 'Draft');
 });
