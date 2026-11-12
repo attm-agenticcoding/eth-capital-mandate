@@ -13,13 +13,19 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (file, fallback) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { if (e.code === 'ENOENT') return fallback; throw e; } };
 const RETRY_HOURS = 72;
 
+// Accepts a bare topic or a pasted subscription URL, with stray whitespace.
+export function normalizeTopic(raw) {
+  const t = String(raw || '').trim().replace(/^https?:\/\/ntfy\.sh\//i, '').replace(/^ntfy\.sh\//i, '').replace(/\/+$/, '');
+  return /^[-_A-Za-z0-9]{1,64}$/.test(t) ? t : null;
+}
+
 export async function publish(messages, { topic, page, fetchImpl = globalThis.fetch }) {
   const results = [];
   for (const m of messages) {
     try {
       const response = await fetchImpl('https://ntfy.sh/', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic, title: m.title, message: m.body, priority: m.priority, tags: m.tags || [], click: `${page}#signals` }) });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status} ${(await response.text().catch(() => '')).slice(0, 200)}`);
       results.push(true);
     } catch (e) { results.push(false); console.error('ntfy push failed:', e instanceof Error ? e.message : String(e)); }
   }
@@ -34,6 +40,8 @@ export async function evaluate({ snapshot, previous, config, now = new Date().to
   const { file, changes } = advance(previous, readSnapshot(snapshot, asOf), config, asOf);
   const due = file.events.filter((e) => e.notify && !e.pushed && !e.seeded && Date.parse(asOf) - Date.parse(e.t) <= RETRY_HOURS * 3600000);
   const messages = due.map((e) => ({ event: e, ...messageFor(e, file) }));
+  if (topic && !normalizeTopic(topic)) throw new Error('NTFY_TOPIC is not a valid ntfy topic (letters, digits, - and _ only, up to 64)');
+  topic = topic ? normalizeTopic(topic) : null;
   const firstConnect = !!topic && file.push.channel !== 'ntfy';
   if (topic && !dry) {
     const outgoing = [...(firstConnect ? [connectMessage(file)] : []), ...messages];
@@ -59,7 +67,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       const s = file.signals[def.id];
       console.log(`${def.id.padEnd(18)} ${String(stateInfo(def, s.state).label).padEnd(10)} ${s.dataOk ? def.reading(s.value, s.detail) : '（本次无可用读数，状态沿用）'}${s.pending ? `  ｜待确认 ${stateInfo(def, s.pending.state).label} ${s.pending.days}/${s.pending.needed}` : ''}`);
     }
-    console.log(`${changes.length} state change(s); ${messages.length} message(s) due; push ${process.env.NTFY_TOPIC ? (dry ? 'configured (dry run, not sent)' : firstConnect ? 'connected' : 'configured') : 'not configured'}`);
+    console.log(`${changes.length} state change(s); ${messages.length} message(s) due; push ${!process.env.NTFY_TOPIC ? 'not configured' : dry ? 'configured (dry run, not sent)' : file.push.channel === 'ntfy' ? (firstConnect ? 'connected now' : 'connected') : 'configured but not yet delivered'}`);
     for (const m of messages) console.log(`[push] ${m.title} — ${m.body}`);
     if (!dry) fs.writeFileSync(target, JSON.stringify(file, null, 2) + '\n');
   }).catch((e) => { console.error('FATAL', e); process.exitCode = 1; });

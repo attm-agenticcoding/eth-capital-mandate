@@ -237,3 +237,9 @@ test('the committed signal state is well formed and carries no score', () => {
   assert.ok(file.events.every((e) => e.pushed === true || e.pushed === false));
   assert.ok(T0 > 0);
 });
+
+test('topic is normalised from pasted forms and junk is refused', async () => {
+  const { normalizeTopic } = await import('../scripts/signals.mjs');
+  for (const raw of ['zack-eth_1', ' zack-eth_1\n', 'https://ntfy.sh/zack-eth_1', 'ntfy.sh/zack-eth_1/']) assert.equal(normalizeTopic(raw), 'zack-eth_1', JSON.stringify(raw));
+  for (const raw of ['', 'has space', 'a/b', 'https://example.com/x', 'x'.repeat(65)]) assert.equal(normalizeTopic(raw), null, JSON.stringify(raw));
+});
