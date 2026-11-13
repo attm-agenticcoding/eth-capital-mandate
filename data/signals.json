@@ -1,6 +1,6 @@
 {
   "rulesVersion": "pathway-signals-v1",
-  "updatedAt": "2026-11-13T01:09:28.594Z",
+  "updatedAt": "2026-11-13T04:48:36.043Z",
   "push": {
     "channel": "ntfy",
     "connectedAt": "2026-11-13T01:09:31.487Z",
@@ -10,8 +10,8 @@
     "collateral-rank": {
       "state": "btc_leads",
       "since": "2026-10-06",
-      "value": 0.3326,
-      "valueAt": "2026-11-13T01:09:28.594Z",
+      "value": 0.3315,
+      "valueAt": "2026-11-13T04:48:36.043Z",
       "detail": {
         "line": 1
       },
@@ -21,8 +21,8 @@
     "collateral-share": {
       "state": "in_range",
       "since": "2026-11-11",
-      "value": 13.49,
-      "valueAt": "2026-11-13T01:09:28.594Z",
+      "value": 13.42,
+      "valueAt": "2026-11-13T04:48:36.043Z",
       "detail": {
         "center": 14.99,
         "scale": 0.7487129999999999,
@@ -38,7 +38,7 @@
       "state": "parity",
       "since": "2026-10-06",
       "value": 0.007,
-      "valueAt": "2026-11-13T01:09:28.594Z",
+      "valueAt": "2026-11-13T04:48:36.043Z",
       "detail": {
         "tolerance": 0.5
       },
@@ -48,10 +48,10 @@
     "staking-flow": {
       "state": "rising",
       "since": "2026-11-05",
-      "value": 36.284,
-      "valueAt": "2026-11-13T01:09:28.594Z",
+      "value": 36.283,
+      "valueAt": "2026-11-13T04:48:36.043Z",
       "detail": {
-        "change": 0.45700000000000074,
+        "change": 0.45600000000000307,
         "windowDays": 30,
         "reference": 35.827,
         "referenceDay": "2026-10-14"
@@ -63,18 +63,18 @@
       "state": "accruing",
       "since": "2026-11-12",
       "value": 8065228,
-      "valueAt": "2026-11-12T13:00:08.618Z",
+      "valueAt": "2026-11-13T04:48:36.043Z",
       "detail": {
         "windowDays": 30
       },
-      "dataOk": false,
+      "dataOk": true,
       "pending": null
     },
     "stable-majority": {
       "state": "minority",
       "since": "2026-11-06",
       "value": 49.4,
-      "valueAt": "2026-11-13T01:09:28.594Z",
+      "valueAt": "2026-11-13T04:48:36.043Z",
       "detail": {
         "line": 50
       },
@@ -84,8 +84,8 @@
     "burn-line": {
       "state": "below",
       "since": "2026-10-06",
-      "value": 3.077,
-      "valueAt": "2026-11-13T01:09:28.594Z",
+      "value": 3.083,
+      "valueAt": "2026-11-13T04:48:36.043Z",
       "detail": {
         "line": 10
       },
@@ -95,23 +95,23 @@
     "ethbtc-range": {
       "state": "in_range",
       "since": "2026-11-12",
-      "value": 0.027743,
-      "valueAt": "2026-11-12T13:00:08.618Z",
+      "value": 0.02804,
+      "valueAt": "2026-11-13T04:48:36.043Z",
       "detail": {
         "low": 0.025778,
         "high": 0.036128,
-        "positionPct": 19,
-        "daysSinceLow": 158.5,
-        "daysSinceHigh": 336.5
+        "positionPct": 21.9,
+        "daysSinceLow": 159.2,
+        "daysSinceHigh": 337.2
       },
-      "dataOk": false,
+      "dataOk": true,
       "pending": null
     },
     "issuance-eip": {
       "state": "Draft",
       "since": "2026-11-12",
       "value": "Draft",
-      "valueAt": "2026-11-13T01:09:28.594Z",
+      "valueAt": "2026-11-13T04:48:36.043Z",
       "detail": null,
       "dataOk": true,
       "pending": null
@@ -273,7 +273,7 @@
       },
       {
         "d": "2026-11-13",
-        "v": 0.3326
+        "v": 0.3315
       }
     ],
     "usdDebtEthSharePct": [
@@ -431,7 +431,7 @@
       },
       {
         "d": "2026-11-13",
-        "v": 13.49
+        "v": 13.42
       }
     ],
     "lltvGapPp": [
@@ -747,7 +747,7 @@
       },
       {
         "d": "2026-11-13",
-        "v": 36.284
+        "v": 36.283
       }
     ],
     "burnOffsetPct": [
@@ -905,7 +905,7 @@
       },
       {
         "d": "2026-11-13",
-        "v": 3.077
+        "v": 3.083
       }
     ],
     "stableStrictSharePct": [
@@ -1070,12 +1070,20 @@
       {
         "d": "2026-11-12",
         "v": 8065228
+      },
+      {
+        "d": "2026-11-13",
+        "v": 8065228
       }
     ],
     "ethBtcRange": [
       {
         "d": "2026-11-12",
         "v": 0.027743
+      },
+      {
+        "d": "2026-11-13",
+        "v": 0.02804
       }
     ]
   },
@@ -2032,11 +2040,19 @@
       {
         "d": "2026-11-12",
         "s": "accruing"
+      },
+      {
+        "d": "2026-11-13",
+        "s": "accruing"
       }
     ],
     "ethbtc-range": [
       {
         "d": "2026-11-12",
+        "s": "in_range"
+      },
+      {
+        "d": "2026-11-13",
         "s": "in_range"
       }
     ],
