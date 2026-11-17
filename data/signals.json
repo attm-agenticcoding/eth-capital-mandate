@@ -1,6 +1,6 @@
 {
   "rulesVersion": "pathway-signals-v1",
-  "updatedAt": "2026-11-17T01:29:08.412Z",
+  "updatedAt": "2026-11-17T15:25:25.674Z",
   "push": {
     "channel": "ntfy",
     "connectedAt": "2026-11-13T01:09:31.487Z",
@@ -10,8 +10,8 @@
     "collateral-rank": {
       "state": "btc_leads",
       "since": "2026-10-06",
-      "value": 0.3775,
-      "valueAt": "2026-11-17T01:29:08.412Z",
+      "value": 0.3836,
+      "valueAt": "2026-11-17T15:25:25.674Z",
       "detail": {
         "line": 1
       },
@@ -21,8 +21,8 @@
     "collateral-share": {
       "state": "in_range",
       "since": "2026-11-11",
-      "value": 14.17,
-      "valueAt": "2026-11-17T01:29:08.412Z",
+      "value": 14.31,
+      "valueAt": "2026-11-17T15:25:25.674Z",
       "detail": {
         "center": 14.715,
         "scale": 1.0378200000000002,
@@ -37,8 +37,8 @@
     "lltv-privilege": {
       "state": "parity",
       "since": "2026-10-06",
-      "value": 0.008,
-      "valueAt": "2026-11-17T01:29:08.412Z",
+      "value": 0.007,
+      "valueAt": "2026-11-17T15:25:25.674Z",
       "detail": {
         "tolerance": 0.5
       },
@@ -48,10 +48,10 @@
     "staking-flow": {
       "state": "rising",
       "since": "2026-11-05",
-      "value": 36.261,
-      "valueAt": "2026-11-17T01:29:08.412Z",
+      "value": 36.272,
+      "valueAt": "2026-11-17T15:25:25.674Z",
       "detail": {
-        "change": 0.4350000000000023,
+        "change": 0.44599999999999795,
         "windowDays": 30,
         "reference": 35.826,
         "referenceDay": "2026-10-18"
@@ -63,7 +63,7 @@
       "state": "accruing",
       "since": "2026-11-12",
       "value": 8072881,
-      "valueAt": "2026-11-17T01:29:08.412Z",
+      "valueAt": "2026-11-17T15:25:25.674Z",
       "detail": {
         "windowDays": 30
       },
@@ -73,8 +73,8 @@
     "stable-majority": {
       "state": "minority",
       "since": "2026-11-06",
-      "value": 49.7,
-      "valueAt": "2026-11-17T01:29:08.412Z",
+      "value": 49.8,
+      "valueAt": "2026-11-17T15:25:25.674Z",
       "detail": {
         "line": 50
       },
@@ -84,8 +84,8 @@
     "burn-line": {
       "state": "below",
       "since": "2026-10-06",
-      "value": 3.191,
-      "valueAt": "2026-11-17T01:29:08.412Z",
+      "value": 3.206,
+      "valueAt": "2026-11-17T15:25:25.674Z",
       "detail": {
         "line": 10
       },
@@ -95,14 +95,14 @@
     "ethbtc-range": {
       "state": "in_range",
       "since": "2026-11-12",
-      "value": 0.028105,
-      "valueAt": "2026-11-17T01:29:08.412Z",
+      "value": 0.02788,
+      "valueAt": "2026-11-17T15:25:25.674Z",
       "detail": {
         "low": 0.025778,
         "high": 0.036128,
-        "positionPct": 22.5,
-        "daysSinceLow": 163.1,
-        "daysSinceHigh": 341.1
+        "positionPct": 20.3,
+        "daysSinceLow": 163.6,
+        "daysSinceHigh": 341.6
       },
       "dataOk": true,
       "pending": null
@@ -111,7 +111,7 @@
       "state": "Draft",
       "since": "2026-11-12",
       "value": "Draft",
-      "valueAt": "2026-11-17T01:29:08.412Z",
+      "valueAt": "2026-11-17T15:25:25.674Z",
       "detail": null,
       "dataOk": true,
       "pending": null
@@ -289,7 +289,7 @@
       },
       {
         "d": "2026-11-17",
-        "v": 0.3775
+        "v": 0.3836
       }
     ],
     "usdDebtEthSharePct": [
@@ -463,7 +463,7 @@
       },
       {
         "d": "2026-11-17",
-        "v": 14.17
+        "v": 14.31
       }
     ],
     "lltvGapPp": [
@@ -637,7 +637,7 @@
       },
       {
         "d": "2026-11-17",
-        "v": 0.008
+        "v": 0.007
       }
     ],
     "stakingRatioPct": [
@@ -811,7 +811,7 @@
       },
       {
         "d": "2026-11-17",
-        "v": 36.261
+        "v": 36.272
       }
     ],
     "burnOffsetPct": [
@@ -985,7 +985,7 @@
       },
       {
         "d": "2026-11-17",
-        "v": 3.191
+        "v": 3.206
       }
     ],
     "stableStrictSharePct": [
@@ -1159,7 +1159,7 @@
       },
       {
         "d": "2026-11-17",
-        "v": 49.7
+        "v": 49.8
       }
     ],
     "treasuryCohortEth": [
@@ -1211,7 +1211,7 @@
       },
       {
         "d": "2026-11-17",
-        "v": 0.028105
+        "v": 0.02788
       }
     ]
   },
