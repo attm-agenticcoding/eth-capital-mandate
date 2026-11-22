@@ -1,6 +1,6 @@
 {
   "rulesVersion": "pathway-signals-v1",
-  "updatedAt": "2026-11-22T04:48:15.128Z",
+  "updatedAt": "2026-11-22T13:57:31.212Z",
   "push": {
     "channel": "ntfy",
     "connectedAt": "2026-11-13T01:09:31.487Z",
@@ -10,8 +10,8 @@
     "collateral-rank": {
       "state": "btc_leads",
       "since": "2026-10-06",
-      "value": 0.3734,
-      "valueAt": "2026-11-22T04:48:15.128Z",
+      "value": 0.3736,
+      "valueAt": "2026-11-22T13:57:31.212Z",
       "detail": {
         "line": 1
       },
@@ -21,8 +21,8 @@
     "collateral-share": {
       "state": "in_range",
       "since": "2026-11-11",
-      "value": 13.58,
-      "valueAt": "2026-11-22T04:48:15.128Z",
+      "value": 13.65,
+      "valueAt": "2026-11-22T13:57:31.212Z",
       "detail": {
         "center": 14.51,
         "scale": 1.0229939999999993,
@@ -37,8 +37,8 @@
     "lltv-privilege": {
       "state": "parity",
       "since": "2026-10-06",
-      "value": 0.009,
-      "valueAt": "2026-11-22T04:48:15.128Z",
+      "value": 0.008,
+      "valueAt": "2026-11-22T13:57:31.212Z",
       "detail": {
         "tolerance": 0.5
       },
@@ -48,10 +48,10 @@
     "staking-flow": {
       "state": "rising",
       "since": "2026-11-05",
-      "value": 36.29,
-      "valueAt": "2026-11-22T04:48:15.128Z",
+      "value": 36.32,
+      "valueAt": "2026-11-22T13:57:31.212Z",
       "detail": {
-        "change": 0.4649999999999963,
+        "change": 0.49499999999999744,
         "windowDays": 30,
         "reference": 35.825,
         "referenceDay": "2026-10-23"
@@ -63,7 +63,7 @@
       "state": "accruing",
       "since": "2026-11-12",
       "value": 8072881,
-      "valueAt": "2026-11-22T04:48:15.128Z",
+      "valueAt": "2026-11-22T13:57:31.212Z",
       "detail": {
         "windowDays": 30
       },
@@ -74,7 +74,7 @@
       "state": "minority",
       "since": "2026-11-06",
       "value": 49.4,
-      "valueAt": "2026-11-22T04:48:15.128Z",
+      "valueAt": "2026-11-22T13:57:31.212Z",
       "detail": {
         "line": 50
       },
@@ -84,8 +84,8 @@
     "burn-line": {
       "state": "below",
       "since": "2026-10-06",
-      "value": 3.544,
-      "valueAt": "2026-11-22T04:48:15.128Z",
+      "value": 3.549,
+      "valueAt": "2026-11-22T13:57:31.212Z",
       "detail": {
         "line": 10
       },
@@ -95,14 +95,14 @@
     "ethbtc-range": {
       "state": "in_range",
       "since": "2026-11-12",
-      "value": 0.028047,
-      "valueAt": "2026-11-22T04:48:15.128Z",
+      "value": 0.028069,
+      "valueAt": "2026-11-22T13:57:31.212Z",
       "detail": {
         "low": 0.025778,
         "high": 0.036128,
-        "positionPct": 21.9,
-        "daysSinceLow": 168.2,
-        "daysSinceHigh": 346.2
+        "positionPct": 22.1,
+        "daysSinceLow": 168.6,
+        "daysSinceHigh": 346.6
       },
       "dataOk": true,
       "pending": null
@@ -111,7 +111,7 @@
       "state": "Draft",
       "since": "2026-11-12",
       "value": "Draft",
-      "valueAt": "2026-11-22T04:48:15.128Z",
+      "valueAt": "2026-11-22T13:57:31.212Z",
       "detail": null,
       "dataOk": true,
       "pending": null
@@ -309,7 +309,7 @@
       },
       {
         "d": "2026-11-22",
-        "v": 0.3734
+        "v": 0.3736
       }
     ],
     "usdDebtEthSharePct": [
@@ -503,7 +503,7 @@
       },
       {
         "d": "2026-11-22",
-        "v": 13.58
+        "v": 13.65
       }
     ],
     "lltvGapPp": [
@@ -697,7 +697,7 @@
       },
       {
         "d": "2026-11-22",
-        "v": 0.009
+        "v": 0.008
       }
     ],
     "stakingRatioPct": [
@@ -891,7 +891,7 @@
       },
       {
         "d": "2026-11-22",
-        "v": 36.29
+        "v": 36.32
       }
     ],
     "burnOffsetPct": [
@@ -1085,7 +1085,7 @@
       },
       {
         "d": "2026-11-22",
-        "v": 3.544
+        "v": 3.549
       }
     ],
     "stableStrictSharePct": [
@@ -1371,7 +1371,7 @@
       },
       {
         "d": "2026-11-22",
-        "v": 0.028047
+        "v": 0.028069
       }
     ]
   },
