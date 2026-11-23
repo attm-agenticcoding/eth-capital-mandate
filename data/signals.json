@@ -1,6 +1,6 @@
 {
   "rulesVersion": "pathway-signals-v1",
-  "updatedAt": "2026-11-23T05:27:32.752Z",
+  "updatedAt": "2026-11-23T17:13:09.674Z",
   "push": {
     "channel": "ntfy",
     "connectedAt": "2026-11-13T01:09:31.487Z",
@@ -10,8 +10,8 @@
     "collateral-rank": {
       "state": "btc_leads",
       "since": "2026-10-06",
-      "value": 0.3739,
-      "valueAt": "2026-11-23T05:27:32.752Z",
+      "value": 0.3769,
+      "valueAt": "2026-11-23T17:13:09.674Z",
       "detail": {
         "line": 1
       },
@@ -21,8 +21,8 @@
     "collateral-share": {
       "state": "in_range",
       "since": "2026-11-11",
-      "value": 13.67,
-      "valueAt": "2026-11-23T05:27:32.752Z",
+      "value": 13.86,
+      "valueAt": "2026-11-23T17:13:09.674Z",
       "detail": {
         "center": 14.44,
         "scale": 1.11195,
@@ -37,8 +37,8 @@
     "lltv-privilege": {
       "state": "parity",
       "since": "2026-10-06",
-      "value": 0.009,
-      "valueAt": "2026-11-23T05:27:32.752Z",
+      "value": 0.008,
+      "valueAt": "2026-11-23T17:13:09.674Z",
       "detail": {
         "tolerance": 0.5
       },
@@ -48,10 +48,10 @@
     "staking-flow": {
       "state": "rising",
       "since": "2026-11-05",
-      "value": 36.348,
-      "valueAt": "2026-11-23T05:27:32.752Z",
+      "value": 36.35,
+      "valueAt": "2026-11-23T17:13:09.674Z",
       "detail": {
-        "change": 0.4889999999999972,
+        "change": 0.49099999999999966,
         "windowDays": 30,
         "reference": 35.859,
         "referenceDay": "2026-10-24"
@@ -62,8 +62,8 @@
     "treasury-flow": {
       "state": "accruing",
       "since": "2026-11-12",
-      "value": 8072881,
-      "valueAt": "2026-11-23T05:27:32.752Z",
+      "value": 8080700,
+      "valueAt": "2026-11-23T17:13:09.674Z",
       "detail": {
         "windowDays": 30
       },
@@ -74,7 +74,7 @@
       "state": "minority",
       "since": "2026-11-06",
       "value": 49.3,
-      "valueAt": "2026-11-23T05:27:32.752Z",
+      "valueAt": "2026-11-23T17:13:09.674Z",
       "detail": {
         "line": 50
       },
@@ -84,8 +84,8 @@
     "burn-line": {
       "state": "below",
       "since": "2026-10-06",
-      "value": 3.551,
-      "valueAt": "2026-11-23T05:27:32.752Z",
+      "value": 3.633,
+      "valueAt": "2026-11-23T17:13:09.674Z",
       "detail": {
         "line": 10
       },
@@ -95,14 +95,14 @@
     "ethbtc-range": {
       "state": "in_range",
       "since": "2026-11-12",
-      "value": 0.028196,
-      "valueAt": "2026-11-23T05:27:32.752Z",
+      "value": 0.028486,
+      "valueAt": "2026-11-23T17:13:09.674Z",
       "detail": {
         "low": 0.025778,
         "high": 0.036128,
-        "positionPct": 23.4,
-        "daysSinceLow": 169.2,
-        "daysSinceHigh": 347.2
+        "positionPct": 26.2,
+        "daysSinceLow": 169.7,
+        "daysSinceHigh": 347.7
       },
       "dataOk": true,
       "pending": null
@@ -111,7 +111,7 @@
       "state": "Draft",
       "since": "2026-11-12",
       "value": "Draft",
-      "valueAt": "2026-11-23T05:27:32.752Z",
+      "valueAt": "2026-11-23T17:13:09.674Z",
       "detail": null,
       "dataOk": true,
       "pending": null
@@ -313,7 +313,7 @@
       },
       {
         "d": "2026-11-23",
-        "v": 0.3739
+        "v": 0.3769
       }
     ],
     "usdDebtEthSharePct": [
@@ -511,7 +511,7 @@
       },
       {
         "d": "2026-11-23",
-        "v": 13.67
+        "v": 13.86
       }
     ],
     "lltvGapPp": [
@@ -709,7 +709,7 @@
       },
       {
         "d": "2026-11-23",
-        "v": 0.009
+        "v": 0.008
       }
     ],
     "stakingRatioPct": [
@@ -907,7 +907,7 @@
       },
       {
         "d": "2026-11-23",
-        "v": 36.348
+        "v": 36.35
       }
     ],
     "burnOffsetPct": [
@@ -1105,7 +1105,7 @@
       },
       {
         "d": "2026-11-23",
-        "v": 3.551
+        "v": 3.633
       }
     ],
     "stableStrictSharePct": [
@@ -1353,7 +1353,7 @@
       },
       {
         "d": "2026-11-23",
-        "v": 8072881
+        "v": 8080700
       }
     ],
     "ethBtcRange": [
@@ -1403,7 +1403,7 @@
       },
       {
         "d": "2026-11-23",
-        "v": 0.028196
+        "v": 0.028486
       }
     ]
   },
