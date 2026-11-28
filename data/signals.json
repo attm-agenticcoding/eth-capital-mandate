@@ -1,6 +1,6 @@
 {
   "rulesVersion": "pathway-signals-v1",
-  "updatedAt": "2026-11-27T16:00:54.638Z",
+  "updatedAt": "2026-11-28T00:59:25.665Z",
   "push": {
     "channel": "ntfy",
     "connectedAt": "2026-11-13T01:09:31.487Z",
@@ -10,8 +10,8 @@
     "collateral-rank": {
       "state": "btc_leads",
       "since": "2026-10-06",
-      "value": 0.3498,
-      "valueAt": "2026-11-27T16:00:54.638Z",
+      "value": 0.3485,
+      "valueAt": "2026-11-28T00:59:25.665Z",
       "detail": {
         "line": 1
       },
@@ -21,15 +21,15 @@
     "collateral-share": {
       "state": "in_range",
       "since": "2026-11-11",
-      "value": 13.71,
-      "valueAt": "2026-11-27T16:00:54.638Z",
+      "value": 13.69,
+      "valueAt": "2026-11-28T00:59:25.665Z",
       "detail": {
-        "center": 14.24,
-        "scale": 0.9711030000000003,
-        "width": 2.913309000000001,
-        "lower": 11.326691,
-        "upper": 17.153309,
-        "observations": 52
+        "center": 14.17,
+        "scale": 0.8450820000000003,
+        "width": 2.5352460000000008,
+        "lower": 11.634754,
+        "upper": 16.705246000000002,
+        "observations": 53
       },
       "dataOk": true,
       "pending": null
@@ -37,8 +37,8 @@
     "lltv-privilege": {
       "state": "parity",
       "since": "2026-10-06",
-      "value": -0.222,
-      "valueAt": "2026-11-27T16:00:54.638Z",
+      "value": -0.224,
+      "valueAt": "2026-11-28T00:59:25.665Z",
       "detail": {
         "tolerance": 0.5
       },
@@ -48,13 +48,13 @@
     "staking-flow": {
       "state": "rising",
       "since": "2026-11-05",
-      "value": 36.285,
-      "valueAt": "2026-11-27T16:00:54.638Z",
+      "value": 36.282,
+      "valueAt": "2026-11-28T00:59:25.665Z",
       "detail": {
-        "change": 0.31799999999999784,
+        "change": 0.24199999999999733,
         "windowDays": 30,
-        "reference": 35.967,
-        "referenceDay": "2026-10-28"
+        "reference": 36.04,
+        "referenceDay": "2026-10-29"
       },
       "dataOk": true,
       "pending": null
@@ -63,7 +63,7 @@
       "state": "accruing",
       "since": "2026-11-12",
       "value": 8050875,
-      "valueAt": "2026-11-27T16:00:54.638Z",
+      "valueAt": "2026-11-28T00:59:25.665Z",
       "detail": {
         "windowDays": 30
       },
@@ -73,8 +73,8 @@
     "stable-majority": {
       "state": "minority",
       "since": "2026-11-06",
-      "value": 49.4,
-      "valueAt": "2026-11-27T16:00:54.638Z",
+      "value": 49.3,
+      "valueAt": "2026-11-28T00:59:25.665Z",
       "detail": {
         "line": 50
       },
@@ -84,8 +84,8 @@
     "burn-line": {
       "state": "below",
       "since": "2026-10-06",
-      "value": 3.756,
-      "valueAt": "2026-11-27T16:00:54.638Z",
+      "value": 3.76,
+      "valueAt": "2026-11-28T00:59:25.665Z",
       "detail": {
         "line": 10
       },
@@ -95,14 +95,14 @@
     "ethbtc-range": {
       "state": "in_range",
       "since": "2026-11-12",
-      "value": 0.027823,
-      "valueAt": "2026-11-27T16:00:54.638Z",
+      "value": 0.027743,
+      "valueAt": "2026-11-28T00:59:25.665Z",
       "detail": {
         "low": 0.025778,
         "high": 0.036128,
-        "positionPct": 19.8,
-        "daysSinceLow": 173.7,
-        "daysSinceHigh": 351.7
+        "positionPct": 19,
+        "daysSinceLow": 174,
+        "daysSinceHigh": 352
       },
       "dataOk": true,
       "pending": null
@@ -111,7 +111,7 @@
       "state": "Draft",
       "since": "2026-11-12",
       "value": "Draft",
-      "valueAt": "2026-11-27T16:00:54.638Z",
+      "valueAt": "2026-11-28T00:59:25.665Z",
       "detail": null,
       "dataOk": true,
       "pending": null
@@ -330,6 +330,10 @@
       {
         "d": "2026-11-27",
         "v": 0.3498
+      },
+      {
+        "d": "2026-11-28",
+        "v": 0.3485
       }
     ],
     "usdDebtEthSharePct": [
@@ -544,6 +548,10 @@
       {
         "d": "2026-11-27",
         "v": 13.71
+      },
+      {
+        "d": "2026-11-28",
+        "v": 13.69
       }
     ],
     "lltvGapPp": [
@@ -758,6 +766,10 @@
       {
         "d": "2026-11-27",
         "v": -0.222
+      },
+      {
+        "d": "2026-11-28",
+        "v": -0.224
       }
     ],
     "stakingRatioPct": [
@@ -972,6 +984,10 @@
       {
         "d": "2026-11-27",
         "v": 36.285
+      },
+      {
+        "d": "2026-11-28",
+        "v": 36.282
       }
     ],
     "burnOffsetPct": [
@@ -1186,6 +1202,10 @@
       {
         "d": "2026-11-27",
         "v": 3.756
+      },
+      {
+        "d": "2026-11-28",
+        "v": 3.76
       }
     ],
     "stableStrictSharePct": [
@@ -1400,6 +1420,10 @@
       {
         "d": "2026-11-27",
         "v": 49.4
+      },
+      {
+        "d": "2026-11-28",
+        "v": 49.3
       }
     ],
     "treasuryCohortEth": [
@@ -1465,6 +1489,10 @@
       },
       {
         "d": "2026-11-27",
+        "v": 8050875
+      },
+      {
+        "d": "2026-11-28",
         "v": 8050875
       }
     ],
@@ -1532,6 +1560,10 @@
       {
         "d": "2026-11-27",
         "v": 0.027823
+      },
+      {
+        "d": "2026-11-28",
+        "v": 0.027743
       }
     ]
   },
@@ -1748,6 +1780,10 @@
       {
         "d": "2026-11-27",
         "s": "btc_leads"
+      },
+      {
+        "d": "2026-11-28",
+        "s": "btc_leads"
       }
     ],
     "collateral-share": [
@@ -1961,6 +1997,10 @@
       },
       {
         "d": "2026-11-27",
+        "s": "in_range"
+      },
+      {
+        "d": "2026-11-28",
         "s": "in_range"
       }
     ],
@@ -2176,6 +2216,10 @@
       {
         "d": "2026-11-27",
         "s": "parity"
+      },
+      {
+        "d": "2026-11-28",
+        "s": "parity"
       }
     ],
     "staking-flow": [
@@ -2389,6 +2433,10 @@
       },
       {
         "d": "2026-11-27",
+        "s": "rising"
+      },
+      {
+        "d": "2026-11-28",
         "s": "rising"
       }
     ],
@@ -2604,6 +2652,10 @@
       {
         "d": "2026-11-27",
         "s": "minority"
+      },
+      {
+        "d": "2026-11-28",
+        "s": "minority"
       }
     ],
     "burn-line": [
@@ -2818,6 +2870,10 @@
       {
         "d": "2026-11-27",
         "s": "below"
+      },
+      {
+        "d": "2026-11-28",
+        "s": "below"
       }
     ],
     "treasury-flow": [
@@ -2883,6 +2939,10 @@
       },
       {
         "d": "2026-11-27",
+        "s": "accruing"
+      },
+      {
+        "d": "2026-11-28",
         "s": "accruing"
       }
     ],
@@ -2950,6 +3010,10 @@
       {
         "d": "2026-11-27",
         "s": "in_range"
+      },
+      {
+        "d": "2026-11-28",
+        "s": "in_range"
       }
     ],
     "issuance-eip": [
@@ -3015,6 +3079,10 @@
       },
       {
         "d": "2026-11-27",
+        "s": "Draft"
+      },
+      {
+        "d": "2026-11-28",
         "s": "Draft"
       }
     ]
